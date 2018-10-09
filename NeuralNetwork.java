@@ -72,7 +72,7 @@ public class NeuralNetwork {
 			biases[i-1].printMatrix();
 		}
 		
-		System.out.println("Weights");
+		System.out.println("\nWeights");
 		for (int i = 0; i < layers-1; i++) {
 			System.out.println("Layer " + i);
 			
@@ -132,45 +132,121 @@ public class NeuralNetwork {
 		}
 	}
 	
-	private static void feedForward() {
+	private static Matrix feedForward(Matrix inputs) {
+		for (int i = 0; i < weights.length; i++) {
+			inputs = Matrix.dot(weights[i], inputs);
+			inputs = Matrix.add(inputs, biases[i]);
+			inputs = sigmoid(inputs);
+		}
+		
+		return inputs;
+	}
+	
+	private static void SGD() {
 		
 	}
 	
 	private static void backPropagate() {
 		
 	}
+	
+	/* Sigmoid Function */
+	private static Matrix sigmoid(Matrix z) {
+		// basically return (1/(1+e^z)) = y for every index in z
+		
+		Matrix sigma = new Matrix(z);
+		
+		for (int i = 0; i < z.rows; i++) {
+			for (int j = 0; j < z.columns; j++) {
+				sigma.matrix[i][j] = (1.0 / (1.0 + Math.pow(e, z.matrix[i][j])));
+			}
+		}
+		
+		return sigma;
+	}
+	
+	/* Derivative of Sigmoid Function */
+	/*
+	private static Matrix sigmoidPrime(Matrix z) {
+		// basically return y(1 - y) for every index in z
+		
+		Matrix sigmaPrime = new Matrix(z);
+		
+		for (int i = 0; i < z.rows; i++) {
+			for (int j = 0; j < z.columns; j++) {
+				sigma.matrix[i][j] = sigmoid(z) * (1 - sigmoid(z));
+			}
+		}
+		
+		return sigmaPrime;
+	}
+	*/
 }
 
 /* Custom Matrix Class */
 class Matrix {
-	private final int rows;
-	private final int columns;
-	private final double[][] matrix;
+	public final int rows;
+	public final int columns;
+	public final double[][] matrix;
 	
 	private Random r;
 	
-	/* Constructor */
+	/* Constructor of a New Matrix */
 	public Matrix(int rows, int columns, boolean populate) {
 		this.rows = rows;
 		this.columns = columns;
 		this.matrix = new double[rows][columns];
 		
+		// if we want to populate the matrix, then we'll fill it with randomized real numbers
 		if (populate)
 			randomizeItems();
 	}
 	
+	/* Constructor of an Existing Matrix */
+	public Matrix(Matrix oldMatrix) {
+		this.rows = oldMatrix.rows;
+		this.columns = oldMatrix.columns;
+		this.matrix = oldMatrix.matrix;
+	}
+	
 	/* Dot Product Between Two Matrices */
-	public Matrix dot(Matrix A, Matrix B) {
+	public static Matrix dot(Matrix A, Matrix B) {
 		return null;
 	}
 	
+	/* Addition Between Two Matrices */
+	public static Matrix add(Matrix A, Matrix B) {
+		if (A.rows == B.rows && A.columns == B.columns) {
+			return null;
+		}
+		else
+			return null;
+	}
+	
+	/* Create a Random Double For Each Position */
+	private void randomizeItems() {
+		// iterate through the entire matrix and fill it with random real numbers
+		
+		r = new Random();
+		
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < columns; j++) {
+				this.matrix[i][j] = r.nextDouble();
+			}
+		}
+	}
+	
+	/* Print All Rows and Columns of A Matrix */
 	public void printMatrix() {
+		// print out the entire matrix, including all of its values at every index
+		
 		System.out.print("[");
 		
 		for (int i = 0; i < rows; i++) {
 			System.out.print("[");
 			
 			for (int j = 0; j < columns; j++) {
+				// if this is the last item in the column, don't add a comma
 				if (j == columns-1) {
 					System.out.print(matrix[i][j] + "");
 				}
@@ -179,30 +255,23 @@ class Matrix {
 				}
 			}
 			
+			// if this is the last item in the row, don't add a comma
 			if (i == rows-1) {
-					System.out.print("]");
-				}
-				else {
-					System.out.print("], ");
-				}
+				System.out.print("]");
+			}
+			else {
+				System.out.print("], ");
+			}
 		}
 		
 		System.out.print("]\n");
 	}
 	
+	/* Print Dimensions of Matrix */
 	public void printMatrixSize() {
-		System.out.println(this.rows + " x " + this.columns);
-	}
-	
-	/* Create a Random Double For Each Position */
-	private void randomizeItems() {
-		r = new Random();
+		// print out the "rows x columns" of this Matrix
 		
-		for (int i = 0; i < rows; i++) {
-			for (int j = 0; j < columns; j++) {
-				this.matrix[i][j] = r.nextDouble();
-			}
-		}
+		System.out.println(this.rows + " x " + this.columns);
 	}
 }
 
