@@ -211,13 +211,25 @@ class Matrix {
 	
 	/* Dot Product Between Two Matrices */
 	public static Matrix dot(Matrix A, Matrix B) {
-		return null;
+		if (A.columns == B.rows) {
+			return null;
+		}
+		else
+			return null;
 	}
 	
 	/* Addition Between Two Matrices */
 	public static Matrix add(Matrix A, Matrix B) {
 		if (A.rows == B.rows && A.columns == B.columns) {
-			return null;
+			Matrix output = new Matrix(A.rows, A.columns, false);
+			
+			for (int i = 0; i < A.rows; i++) {
+				for (int j = 0; j < A.columns; j++) {
+					output.matrix[i][j] = A.matrix[i][j] + B.matrix[i][j];
+				}
+			}
+			
+			return output;
 		}
 		else
 			return null;
