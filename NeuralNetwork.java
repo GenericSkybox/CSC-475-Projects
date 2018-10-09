@@ -17,9 +17,9 @@ public class NeuralNetwork {
 	static boolean firstRun = true;
 	
 	static int layers;
-	static int[] layerSizes;
-	static Matrix biases;
-	static Matrix weights;
+	static int[] layerSizes = {4, 3, 2};
+	static Matrix[] biases;
+	static Matrix[] weights;
 	
 	/* Main Function */
 	public static void main(String[] args) {
@@ -38,7 +38,6 @@ public class NeuralNetwork {
 			
 			// grab the user's input
 			String input = scanner.next();
-			System.out.println("Your response was - " + input + "\n");
 			
 			try {
 				int response = Integer.parseInt(input);
@@ -50,23 +49,41 @@ public class NeuralNetwork {
 					parseInput(response);
 				
 			} catch (Exception e) {
-				System.out.println("Error parsing your input - please only enter digits");
+				System.out.println("Error parsing your input - please only enter digits\n");
 			}
 		}
 		
 		// exit the program with a goodbye message
-		System.out.println("\nGoodbye!");
+		System.out.println("\nGoodbye!\n");
 		System.exit(0);
 	}
 	
 	/* Create the Neural Network */
 	private static void createNetwork() {
+		layers = layerSizes.length;
+		biases = new Matrix[layers-1];
+		weights = new Matrix[layers-1];
 		
+		System.out.println("Biases:");
+		for (int i = 1; i < layers; i++){
+			System.out.println("Layer " + i);
+			
+			biases[i-1] = new Matrix(layerSizes[i], 1, true);
+			biases[i-1].printMatrix();
+		}
+		
+		System.out.println("Weights");
+		for (int i = 0; i < layers-1; i++) {
+			System.out.println("Layer " + i);
+			
+			weights[i] = new Matrix(layerSizes[i+1], layerSizes[i], true);
+			weights[i].printMatrixSize();
+		}
 	}
 	
 	/* Print User Command Options */
 	private static void printOptions() {
-		System.out.println("Please select an option:");
+		System.out.println("\nPlease select an option:");
 		System.out.println("   [1] Train the Network");
 		System.out.println("   [2] Load a Pre-Trained Network");
 		
@@ -122,23 +139,69 @@ public class NeuralNetwork {
 	private static void backPropagate() {
 		
 	}
+}
+
+/* Custom Matrix Class */
+class Matrix {
+	private final int rows;
+	private final int columns;
+	private final double[][] matrix;
 	
-	/* Custom Matrix Class */
-	private class Matrix {
-		private final int rows;
-		private final int columns;
-		private final double[][] matrix;
+	private Random r;
+	
+	/* Constructor */
+	public Matrix(int rows, int columns, boolean populate) {
+		this.rows = rows;
+		this.columns = columns;
+		this.matrix = new double[rows][columns];
 		
-		/* Constructor */
-		public Matrix(int rows, int columns) {
-			this.rows = rows;
-			this.columns = columns;
-			this.matrix = new double[rows][columns];
+		if (populate)
+			randomizeItems();
+	}
+	
+	/* Dot Product Between Two Matrices */
+	public Matrix dot(Matrix A, Matrix B) {
+		return null;
+	}
+	
+	public void printMatrix() {
+		System.out.print("[");
+		
+		for (int i = 0; i < rows; i++) {
+			System.out.print("[");
+			
+			for (int j = 0; j < columns; j++) {
+				if (j == columns-1) {
+					System.out.print(matrix[i][j] + "");
+				}
+				else {
+					System.out.print(matrix[i][j] + ", ");
+				}
+			}
+			
+			if (i == rows-1) {
+					System.out.print("]");
+				}
+				else {
+					System.out.print("], ");
+				}
 		}
 		
-		/* Dot Product Between Two Matrices */
-		public Matrix dot(Matrix A, Matrix B) {
-			return null;
+		System.out.print("]\n");
+	}
+	
+	public void printMatrixSize() {
+		System.out.println(this.rows + " x " + this.columns);
+	}
+	
+	/* Create a Random Double For Each Position */
+	private void randomizeItems() {
+		r = new Random();
+		
+		for (int i = 0; i < rows; i++) {
+			for (int j = 0; j < columns; j++) {
+				this.matrix[i][j] = r.nextDouble();
+			}
 		}
 	}
 }
