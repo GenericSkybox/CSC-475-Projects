@@ -91,6 +91,78 @@ public class NeuralNetwork {
 		}
 	}
 	
+	/* Print User Command Options */
+	private static void printOptions() {
+		System.out.println("\nPlease select an option:");
+		System.out.println("   [1] Train the Network");
+		System.out.println("   [2] Load a Pre-Trained Network");
+		
+		// if the user hasn't trained or loaded a network yet, then don't show them these following options
+		if (!firstRun) {
+			System.out.println("   [3] Display Network Accuracy on TRAINING Set");
+			System.out.println("   [4] Display Network Accuracy on TRAINING Set");
+			System.out.println("   [5] Save the Current Network State to File");
+		}
+		
+		System.out.println("   [0] Exit\n");
+	}
+	
+	/* Parse User Command */
+	private static void parseInput(int input) {
+		if (input == 1 || input == 2) {
+			// this is no longer the program's first run
+			if (firstRun)
+				firstRun = false;
+			
+			if (input == 1) {
+				//matrixTest();
+				
+				Matrix inputs = new Matrix(new double[][] {{0}, {1}, {0}, {1}});
+				Matrix output = feedForward(inputs);
+				
+				if (output != null)
+					output.printMatrix();
+				else
+					System.out.println("The output is null");
+			}
+			else {
+				try {
+					loadNetwork();
+				} catch (FileNotFoundException e) {
+					System.out.println("Error saving file - " + e.toString());
+				}
+			}
+		}
+		else if (input <= 5) {
+			// if this is the program's first run, treat the input as invalid
+			if (firstRun)
+				System.out.println("The integer you submitted is not a valid command.\n");
+			else {
+				if (input == 3) {
+				
+				}
+				else if (input == 4) {
+					
+				}
+				else {
+					try {
+						saveNetwork();
+					} catch (FileNotFoundException e) {
+						System.out.println("Error saving file - " + e.toString());
+					}
+				}
+			}
+		}
+		else {
+			System.out.println("The integer you submitted is not a valid command.\n");
+		}
+	}
+	
+	/* Load a Saved Neural Network */
+	private static void loadNetwork() throws FileNotFoundException{
+		
+	}
+	
 	/* Save Current Weights and Biases */
 	private static void saveNetwork() throws FileNotFoundException {
 		// this method saves all of the weights and biases we currently have for our network to an CSV file that we can later
@@ -177,102 +249,6 @@ public class NeuralNetwork {
 		System.out.println(sb.toString());
 	}
 	
-	private static void loadNetwork() {
-		
-	}
-	
-	/* Print User Command Options */
-	private static void printOptions() {
-		System.out.println("\nPlease select an option:");
-		System.out.println("   [1] Train the Network");
-		System.out.println("   [2] Load a Pre-Trained Network");
-		
-		// if the user hasn't trained or loaded a network yet, then don't show them these following options
-		if (!firstRun) {
-			System.out.println("   [3] Display Network Accuracy on TRAINING Set");
-			System.out.println("   [4] Display Network Accuracy on TRAINING Set");
-			System.out.println("   [5] Save the Current Network State to File");
-		}
-		
-		System.out.println("   [0] Exit\n");
-	}
-	
-	/* Parse User Command */
-	private static void parseInput(int input) {
-		if (input == 1 || input == 2) {
-			// this is no longer the program's first run
-			if (firstRun)
-				firstRun = false;
-			
-			if (input == 1) {
-				//matrixTest();
-				
-				Matrix inputs = new Matrix(new double[][] {{0}, {1}, {0}, {1}});
-				Matrix output = feedForward(inputs);
-				
-				if (output != null)
-					output.printMatrix();
-				else
-					System.out.println("The output is null");
-			}
-			else {
-				try {
-					saveNetwork();
-				} catch (FileNotFoundException e) {
-					System.out.println("Error saving file - " + e.toString());
-				}
-			}
-		}
-		else if (input <= 5) {
-			// if this is the program's first run, treat the input as invalid
-			if (firstRun)
-				System.out.println("The integer you submitted is not a valid command.\n");
-			else {
-				if (input == 3) {
-				
-				}
-				else if (input == 4) {
-					
-				}
-				else {
-					
-				}
-			}
-		}
-		else {
-			System.out.println("The integer you submitted is not a valid command.\n");
-		}
-	}
-	
-	/* Test the Full Functionality of Matrices */
-	private static void matrixTest() {
-		double[][] first = {{4, -1}, {0, 5}};
-		double[][] second = {{1, 8, 0}, {6, -2, 3}};
-		
-		Matrix firstM = new Matrix(first);
-		System.out.println("\nFirst Matrix");
-		firstM.printMatrix();
-		
-		Matrix secondM = new Matrix(second);
-		System.out.println("\nSecondMatrix");
-		secondM.printMatrix();
-		
-		Matrix fourthM = Matrix.dot(firstM, secondM);
-		System.out.println("\nDot Matrix");
-		if (fourthM != null)
-			fourthM.printMatrix();
-		else
-			System.out.println("The Dot Product is null");
-		
-		
-		Matrix thirdM = Matrix.add(firstM, secondM);
-		System.out.println("\nSum Matrix");
-		if (thirdM != null)
-			thirdM.printMatrix();
-		else
-			System.out.println("The Sum is null");
-	}
-	
 	private static Matrix feedForward(Matrix inputs) {
 		for (int i = 0; i < weights.length; i++) {
 			weights[i].printMatrixSize();
@@ -330,6 +306,35 @@ public class NeuralNetwork {
 		return sigmaPrime;
 	}
 	*/
+	
+	/* Test the Full Functionality of Matrices */
+	private static void matrixTest() {
+		double[][] first = {{4, -1}, {0, 5}};
+		double[][] second = {{1, 8, 0}, {6, -2, 3}};
+		
+		Matrix firstM = new Matrix(first);
+		System.out.println("\nFirst Matrix");
+		firstM.printMatrix();
+		
+		Matrix secondM = new Matrix(second);
+		System.out.println("\nSecondMatrix");
+		secondM.printMatrix();
+		
+		Matrix fourthM = Matrix.dot(firstM, secondM);
+		System.out.println("\nDot Matrix");
+		if (fourthM != null)
+			fourthM.printMatrix();
+		else
+			System.out.println("The Dot Product is null");
+		
+		
+		Matrix thirdM = Matrix.add(firstM, secondM);
+		System.out.println("\nSum Matrix");
+		if (thirdM != null)
+			thirdM.printMatrix();
+		else
+			System.out.println("The Sum is null");
+	}
 }
 
 /* Custom Matrix Class */
