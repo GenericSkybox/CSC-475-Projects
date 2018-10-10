@@ -17,6 +17,7 @@ import java.io.PrintWriter;
 public class NeuralNetwork {
 	// set up the constant of "e" - the base of the natural logarithm
 	final static double e = 2.71828;
+	final static String fileName = "test.csv";
 	
 	static boolean firstRun = true;
 	
@@ -30,7 +31,7 @@ public class NeuralNetwork {
 		// print welcome statement and then create the neural network
 		System.out.println("Welcome to Eric Ortiz's MNIST Digit Recognizer!\n");
 		System.out.println("There's unfortunately not much done yet, so a lot of features are missing currently.\n");
-		createNetwork();
+		createNetwork(true);
 		
 		// start a scanner to read user input
 		Scanner scanner = new Scanner(System.in);
@@ -63,7 +64,7 @@ public class NeuralNetwork {
 	}
 	
 	/* Create a New Neural Network */
-	private static void createNetwork() {
+	private static void createNetwork(boolean prefilledNetwork) {
 		// this method creates all of the randomized weights and biases for the neural network based on our amount of layers
 		// and each of their sizes
 		
@@ -73,11 +74,11 @@ public class NeuralNetwork {
 		weights = new Matrix[layers-1];
 		
 		// create each new weight matrix with randomized values
-		System.out.println("Biases:");
+		System.out.println("\nBiases:");
 		for (int i = 1; i < layers; i++){
 			System.out.println("Layer " + i);
 			
-			biases[i-1] = new Matrix(layerSizes[i], 1, true);
+			biases[i-1] = new Matrix(layerSizes[i], 1, prefilledNetwork);
 			biases[i-1].printMatrix();
 		}
 		
@@ -86,7 +87,7 @@ public class NeuralNetwork {
 		for (int i = 0; i < layers-1; i++) {
 			System.out.println("Layer " + i);
 			
-			weights[i] = new Matrix(layerSizes[i+1], layerSizes[i], true);
+			weights[i] = new Matrix(layerSizes[i+1], layerSizes[i], prefilledNetwork);
 			weights[i].printMatrixSize();
 		}
 	}
@@ -160,7 +161,79 @@ public class NeuralNetwork {
 	
 	/* Load a Saved Neural Network */
 	private static void loadNetwork() throws FileNotFoundException{
+		createNetwork(false);
 		
+		Scanner scanner = new Scanner(new File(fileName)).useDelimiter("[,\n]");
+		scanner.nextLine();
+		
+		// figure out the maximum number of rows between all of the matrices - weights and biases
+		int rowsMax = 0;
+		for (int i = 0; i < weights.length; i++) {
+			if (weights[i].rows > rowsMax)
+				rowsMax = weights[i].rows;
+			
+			if (biases[i].rows > rowsMax)
+				rowsMax = biases[i].rows;
+		}
+		
+		// iterate through all of the rows of this "mega matrix" that we'll be pulling from the CSV file
+		for (int j = 0; j < rowsMax; j++) {
+			// skip the newline character
+			if (j != 0)
+				scanner.next();
+			
+			// iterate through all of the weights matrices
+			for (int i = 0; i < weights.length; i++) {
+				// iterate through all of the columns in a weight matrix and grab its value from the mega matrix
+				for (int k = 0; k < weights[i].columns; k++) {
+					try {
+						weights[i].matrix[j][k] = scanner.nextDouble();
+					} catch (Exception e) {
+						// if there's an error, usually that means we're trying to grab something out of bounds; therefore, we need to
+						// iterate forward a comma, as there will be commas for this entire row of the weight matrix
+						try {
+							scanner.next();
+						} catch (Exception e1) {
+							System.out.println("Failed again");
+						}
+						continue;
+					}
+				}
+			}
+			
+			// iterate through all of the bias matrices
+			for (int i = 0; i < biases.length; i++) {
+				// iterate through all of the columns in a bias matrix and grab its value from the mega matrix
+				for (int k = 0; k < biases[i].columns; k++) {
+					try {
+						biases[i].matrix[j][k] = scanner.nextDouble();
+					} catch (Exception e) {
+						// same thing as with the weight matrices, but this time apply it to the biases
+						try {
+							scanner.next();
+						} catch (Exception e1) {
+							System.out.println("Failed again");
+						}
+						continue;
+					}
+				}
+			}
+		}
+		
+		
+		// print the weights and biases as a sanity check
+		System.out.println();
+		for (int i = 0; i < weights.length; i++) {
+			System.out.println("W" + i);
+			weights[i].printMatrix();
+		}
+		
+		for (int i = 0; i < biases.length; i++) {
+			System.out.println("B" + i);
+			biases[i].printMatrix();
+		}
+		
+		scanner.close();
 	}
 	
 	/* Save Current Weights and Biases */
@@ -168,7 +241,7 @@ public class NeuralNetwork {
 		// this method saves all of the weights and biases we currently have for our network to an CSV file that we can later
 		// load from
 		
-		PrintWriter pw = new PrintWriter(new File("test.csv"));
+		PrintWriter pw = new PrintWriter(new File(fileName));
 		StringBuilder sb = new StringBuilder();
 		
 		// iterate through the length of weights and add a "w" to the top of each weight matrix
@@ -233,7 +306,7 @@ public class NeuralNetwork {
 					// if we reach the end of the array of bias matrices and this is the last column in the bias matrix, then start
 					// the next row
 					if (i == biases.length-1 && k == biases[i].columns-1) {
-						sb.append("\n");
+						sb.append(",\n");
 					}
 					else{
 						sb.append(",");
