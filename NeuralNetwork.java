@@ -8,6 +8,10 @@
 */
 
 import java.util.*;
+import java.io.File;
+import java.io.IOException;
+import java.io.FileNotFoundException;
+import java.io.PrintWriter;
 
 /* Main Class */
 public class NeuralNetwork {
@@ -58,12 +62,17 @@ public class NeuralNetwork {
 		System.exit(0);
 	}
 	
-	/* Create the Neural Network */
+	/* Create a New Neural Network */
 	private static void createNetwork() {
+		// this method creates all of the randomized weights and biases for the neural network based on our amount of layers
+		// and each of their sizes
+		
+		// first declare the arrays of matrices for the weights and biases to be the size of the neural network minus 1
 		layers = layerSizes.length;
 		biases = new Matrix[layers-1];
 		weights = new Matrix[layers-1];
 		
+		// create each new weight matrix with randomized values
 		System.out.println("Biases:");
 		for (int i = 1; i < layers; i++){
 			System.out.println("Layer " + i);
@@ -72,6 +81,7 @@ public class NeuralNetwork {
 			biases[i-1].printMatrix();
 		}
 		
+		// create each new bias matrix with randomized values
 		System.out.println("\nWeights");
 		for (int i = 0; i < layers-1; i++) {
 			System.out.println("Layer " + i);
@@ -79,6 +89,96 @@ public class NeuralNetwork {
 			weights[i] = new Matrix(layerSizes[i+1], layerSizes[i], true);
 			weights[i].printMatrixSize();
 		}
+	}
+	
+	/* Save Current Weights and Biases */
+	private static void saveNetwork() throws FileNotFoundException {
+		// this method saves all of the weights and biases we currently have for our network to an CSV file that we can later
+		// load from
+		
+		PrintWriter pw = new PrintWriter(new File("test.csv"));
+		StringBuilder sb = new StringBuilder();
+		
+		// iterate through the length of weights and add a "w" to the top of each weight matrix
+		for (int i = 0; i < weights.length; i++) {
+			sb.append("w" + i);
+			
+			// we need to add a comma for each column that's in the weight matrix
+			for (int j = 0; j < weights[i].columns; j++) {
+				sb.append(",");
+			}
+		}
+		
+		// iterate through the length of biases and add a "w" to the top of each bias matrix
+		for (int i = 0; i < biases.length; i++) {
+			sb.append("b" + i);
+			
+			// we need to add a comma for each column that's in the bias matrix
+			for (int j = 0; j < biases[i].columns; j++) {
+				sb.append(",");
+			}
+		}
+		// the actual matrices will be written onto the next line
+		sb.append("\n");
+		
+		// figure out the maximum number of rows between all of the matrices - weights and biases
+		int rowsMax = 0;
+		for (int i = 0; i < weights.length; i++) {
+			if (weights[i].rows > rowsMax)
+				rowsMax = weights[i].rows;
+			
+			if (biases[i].rows > rowsMax)
+				rowsMax = biases[i].rows;
+		}
+		
+		// iterate through all of the rows of this "mega matrix" that we'll be putting into the CSV file
+		for (int j = 0; j < rowsMax; j++) {
+			// iterate through all of the weights matrices
+			for (int i = 0; i < weights.length; i++) {
+				// iterate through all of the columns in a weight matrix and add its value to the mega matrix
+				for (int k = 0; k < weights[i].columns; k++) {
+					try {
+						sb.append(weights[i].matrix[j][k] + "");
+					} catch (Exception e) {
+						sb.append(",");
+						continue;
+					}
+					
+					sb.append(",");
+				}
+			}
+			
+			// iterate through all of the bias matrices
+			for (int i = 0; i < biases.length; i++) {
+				// iterate through all of the columns in a bias matrix and add its value to the mega matrix
+				for (int k = 0; k < biases[i].columns; k++) {
+					try {
+						sb.append(biases[i].matrix[j][k] + "");
+					} catch (Exception e) {
+						continue;
+					}
+					
+					// if we reach the end of the array of bias matrices and this is the last column in the bias matrix, then start
+					// the next row
+					if (i == biases.length-1 && k == biases[i].columns-1) {
+						sb.append("\n");
+					}
+					else{
+						sb.append(",");
+					}
+				}
+			}
+		}
+		
+		// finally write that mega matrix to a file and close the file
+		pw.write(sb.toString());
+		pw.close();
+		
+		System.out.println(sb.toString());
+	}
+	
+	private static void loadNetwork() {
+		
 	}
 	
 	/* Print User Command Options */
@@ -105,10 +205,22 @@ public class NeuralNetwork {
 				firstRun = false;
 			
 			if (input == 1) {
+				//matrixTest();
 				
+				Matrix inputs = new Matrix(new double[][] {{0}, {1}, {0}, {1}});
+				Matrix output = feedForward(inputs);
+				
+				if (output != null)
+					output.printMatrix();
+				else
+					System.out.println("The output is null");
 			}
 			else {
-				
+				try {
+					saveNetwork();
+				} catch (FileNotFoundException e) {
+					System.out.println("Error saving file - " + e.toString());
+				}
 			}
 		}
 		else if (input <= 5) {
@@ -132,11 +244,48 @@ public class NeuralNetwork {
 		}
 	}
 	
+	/* Test the Full Functionality of Matrices */
+	private static void matrixTest() {
+		double[][] first = {{4, -1}, {0, 5}};
+		double[][] second = {{1, 8, 0}, {6, -2, 3}};
+		
+		Matrix firstM = new Matrix(first);
+		System.out.println("\nFirst Matrix");
+		firstM.printMatrix();
+		
+		Matrix secondM = new Matrix(second);
+		System.out.println("\nSecondMatrix");
+		secondM.printMatrix();
+		
+		Matrix fourthM = Matrix.dot(firstM, secondM);
+		System.out.println("\nDot Matrix");
+		if (fourthM != null)
+			fourthM.printMatrix();
+		else
+			System.out.println("The Dot Product is null");
+		
+		
+		Matrix thirdM = Matrix.add(firstM, secondM);
+		System.out.println("\nSum Matrix");
+		if (thirdM != null)
+			thirdM.printMatrix();
+		else
+			System.out.println("The Sum is null");
+	}
+	
 	private static Matrix feedForward(Matrix inputs) {
 		for (int i = 0; i < weights.length; i++) {
+			weights[i].printMatrixSize();
+			inputs.printMatrixSize();
+			
 			inputs = Matrix.dot(weights[i], inputs);
+			System.out.println(i + " - dot done");
+			
 			inputs = Matrix.add(inputs, biases[i]);
+			System.out.println(i + " - add done");
+			
 			inputs = sigmoid(inputs);
+			System.out.println(i + " - sigmoid done");
 		}
 		
 		return inputs;
@@ -154,7 +303,7 @@ public class NeuralNetwork {
 	private static Matrix sigmoid(Matrix z) {
 		// basically return (1/(1+e^z)) = y for every index in z
 		
-		Matrix sigma = new Matrix(z);
+		Matrix sigma = z;
 		
 		for (int i = 0; i < z.rows; i++) {
 			for (int j = 0; j < z.columns; j++) {
@@ -202,17 +351,30 @@ class Matrix {
 			randomizeItems();
 	}
 	
-	/* Constructor of an Existing Matrix */
-	public Matrix(Matrix oldMatrix) {
-		this.rows = oldMatrix.rows;
-		this.columns = oldMatrix.columns;
-		this.matrix = oldMatrix.matrix;
+	/* Constructor of an Existing Array */
+	public Matrix(double[][] oldMatrix) {
+		this.rows = oldMatrix.length;
+		this.columns = oldMatrix[0].length;
+		this.matrix = oldMatrix;
 	}
 	
 	/* Dot Product Between Two Matrices */
 	public static Matrix dot(Matrix A, Matrix B) {
 		if (A.columns == B.rows) {
-			return null;
+			Matrix output = new Matrix(A.rows, B.columns, false);
+			
+			for (int i = 0; i < A.rows; i++) {
+				for (int l = 0; l < B.columns; l++) {
+					double c = 0;
+					
+					for (int j = 0; j < A.columns && j < B.rows; j++) {
+						c += A.matrix[i][j] * B.matrix[j][l];
+					}
+					
+					output.matrix[i][l] = c;
+				}
+			}
+			return output;
 		}
 		else
 			return null;
@@ -258,7 +420,7 @@ class Matrix {
 			System.out.print("[");
 			
 			for (int j = 0; j < columns; j++) {
-				// if this is the last item in the column, don't add a comma
+				// if this is the last item in the row, don't add a comma
 				if (j == columns-1) {
 					System.out.print(matrix[i][j] + "");
 				}
@@ -267,12 +429,12 @@ class Matrix {
 				}
 			}
 			
-			// if this is the last item in the row, don't add a comma
+			// if this is the last item in the matrix, don't add a comma
 			if (i == rows-1) {
 				System.out.print("]");
 			}
 			else {
-				System.out.print("], ");
+				System.out.print("],\n ");
 			}
 		}
 		
@@ -291,4 +453,5 @@ class Matrix {
 References:
 https://alvinalexander.com/java/edu/pj/pj010005 - Scanner
 https://introcs.cs.princeton.edu/java/95linear/Matrix.java.html - Matrix class
+https://stackoverflow.com/questions/30073980/java-writing-strings-to-a-csv-file - csv file
 */
