@@ -342,13 +342,19 @@ public class NeuralNetwork {
 			inputs.printMatrixSize();
 			
 			inputs = Matrix.dot(weights[i], inputs);
-			System.out.println(i + " - dot done");
+			//System.out.println(i + " - dot done");
 			
 			inputs = Matrix.add(inputs, biases[i]);
-			System.out.println(i + " - add done");
+			//System.out.println(i + " - add done");
+			
+			System.out.println("\nZ - " + i);
+			inputs.printMatrix();
 			
 			inputs = sigmoid(inputs);
 			System.out.println(i + " - sigmoid done");
+			
+			System.out.println("\na - " + i);
+			inputs.printMatrix();
 		}
 		
 		return inputs;
