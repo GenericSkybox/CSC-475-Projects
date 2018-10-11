@@ -74,21 +74,29 @@ public class NeuralNetwork {
 		weights = new Matrix[layers-1];
 		
 		// create each new weight matrix with randomized values
-		System.out.println("\nBiases:");
+		if (prefilledNetwork)
+			System.out.println("\nBiases:");
+		
 		for (int i = 1; i < layers; i++){
-			System.out.println("Layer " + i);
-			
 			biases[i-1] = new Matrix(layerSizes[i], 1, prefilledNetwork);
-			biases[i-1].printMatrix();
+			
+			if (prefilledNetwork) {
+				System.out.println("Layer " + i);
+				biases[i-1].printMatrix();
+			}
 		}
 		
 		// create each new bias matrix with randomized values
-		System.out.println("\nWeights");
+		if (prefilledNetwork)
+			System.out.println("\nWeights:");
+		
 		for (int i = 0; i < layers-1; i++) {
-			System.out.println("Layer " + i);
-			
 			weights[i] = new Matrix(layerSizes[i+1], layerSizes[i], prefilledNetwork);
-			weights[i].printMatrixSize();
+			
+			if (prefilledNetwork) {
+				System.out.println("Layer " + i);
+				weights[i].printMatrixSize();
+			}
 		}
 	}
 	
@@ -178,24 +186,24 @@ public class NeuralNetwork {
 		
 		// iterate through all of the rows of this "mega matrix" that we'll be pulling from the CSV file
 		for (int j = 0; j < rowsMax; j++) {
-			// skip the newline character
-			if (j != 0)
-				scanner.next();
-			
 			// iterate through all of the weights matrices
 			for (int i = 0; i < weights.length; i++) {
 				// iterate through all of the columns in a weight matrix and grab its value from the mega matrix
 				for (int k = 0; k < weights[i].columns; k++) {
 					try {
-						weights[i].matrix[j][k] = scanner.nextDouble();
+						// grab the next item in the list as a String
+						String item = scanner.next();
+						
+						// if the item has a newline attached to it, remove it
+						if (item.contains("\n"))
+							item = item.substring(0, item.length() - 2);
+						
+						// convert the string to a double and add it to the weight matrix
+						weights[i].matrix[j][k] = Double.parseDouble(item);
 					} catch (Exception e) {
-						// if there's an error, usually that means we're trying to grab something out of bounds; therefore, we need to
-						// iterate forward a comma, as there will be commas for this entire row of the weight matrix
-						try {
-							scanner.next();
-						} catch (Exception e1) {
-							System.out.println("Failed again");
-						}
+						// if there's an error, usually that means we're trying to grab something out of bounds, so we ignore the error
+						//System.out.println("Error in weights - " + e.toString());
+						
 						continue;
 					}
 				}
@@ -206,14 +214,18 @@ public class NeuralNetwork {
 				// iterate through all of the columns in a bias matrix and grab its value from the mega matrix
 				for (int k = 0; k < biases[i].columns; k++) {
 					try {
-						biases[i].matrix[j][k] = scanner.nextDouble();
+						String item = scanner.next();
+						
+						// if the item has a newline attached to it, remove it
+						if (item.contains("\n"))
+							item = item.substring(0, item.length() - 2);
+						
+						// convert the string to a double and add it to the weight matrix
+						biases[i].matrix[j][k] = Double.parseDouble(item);
 					} catch (Exception e) {
-						// same thing as with the weight matrices, but this time apply it to the biases
-						try {
-							scanner.next();
-						} catch (Exception e1) {
-							System.out.println("Failed again");
-						}
+						// if there's an error, usually that means we're trying to grab something out of bounds, so we ignore the error
+						//System.out.println("Error in biases - " + e.toString());
+						
 						continue;
 					}
 				}
@@ -221,6 +233,7 @@ public class NeuralNetwork {
 		}
 		
 		
+		/*
 		// print the weights and biases as a sanity check
 		System.out.println();
 		for (int i = 0; i < weights.length; i++) {
@@ -232,6 +245,7 @@ public class NeuralNetwork {
 			System.out.println("B" + i);
 			biases[i].printMatrix();
 		}
+		*/
 		
 		scanner.close();
 	}
@@ -306,7 +320,7 @@ public class NeuralNetwork {
 					// if we reach the end of the array of bias matrices and this is the last column in the bias matrix, then start
 					// the next row
 					if (i == biases.length-1 && k == biases[i].columns-1) {
-						sb.append(",\n");
+						sb.append("\n");
 					}
 					else{
 						sb.append(",");
@@ -319,7 +333,7 @@ public class NeuralNetwork {
 		pw.write(sb.toString());
 		pw.close();
 		
-		System.out.println(sb.toString());
+		//System.out.println(sb.toString());
 	}
 	
 	private static Matrix feedForward(Matrix inputs) {
