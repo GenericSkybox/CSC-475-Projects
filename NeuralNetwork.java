@@ -12,12 +12,19 @@ import java.io.File;
 import java.io.IOException;
 import java.io.FileNotFoundException;
 import java.io.PrintWriter;
+import javafx.util.Pair; 
+import java.util.ArrayList; 
 
 /* Main Class */
 public class NeuralNetwork {
 	// set up the constant of "e" - the base of the natural logarithm
 	final static double e = 2.71828;
-	final static String fileName = "test.csv";
+	final static int inputSize = 784;
+	final static int trainingSize = 60000;
+	final static int testingSize = 10000;
+	final static String saveFileName = "test.csv";
+	final static String trainFileName = "mnist_train.csv";
+	final static String testFileName = "mnist_test.csv";
 	
 	static boolean firstRun = true;
 	
@@ -26,12 +33,22 @@ public class NeuralNetwork {
 	static Matrix[] biases;
 	static Matrix[] weights;
 	
+	static List<Pair<Integer,Matrix>> testingData = new ArrayList<>();
+	static List<Pair<Integer,Matrix>> trainingData = new ArrayList<>();
+	
 	/* Main Function */
 	public static void main(String[] args) {
-		// print welcome statement and then create the neural network
+		// print the welcome statement
 		System.out.println("Welcome to Eric Ortiz's MNIST Digit Recognizer!\n");
 		System.out.println("There's unfortunately not much done yet, so a lot of features are missing currently.\n");
+		
+		// create the network and load in the training set and the testing set
 		createNetwork(true);
+		try {
+			loadDataSets();
+		} catch (FileNotFoundException e) {
+			System.out.println("Error loading data sets - " + e);
+		}
 		
 		// start a scanner to read user input
 		Scanner scanner = new Scanner(System.in);
@@ -100,6 +117,46 @@ public class NeuralNetwork {
 		}
 	}
 	
+	/* Load In Training and Testing Sets */
+	private static void loadDataSets() throws FileNotFoundException {
+		Scanner scanner = new Scanner(new File(testFileName)).useDelimiter("[,\n]");
+		
+		for (int i = 0; i < testingSize; i++) {
+			String inputRow = scanner.nextLine();
+			String[] stringInputs = inputRow.split(",");
+			
+			Integer firstInteger = new Integer(stringInputs[0]);
+			Matrix inputs = new Matrix(inputSize, 1, false);
+			
+			for (int j = 1; j < stringInputs.length-1; j++) {
+				inputs.matrix[j][0] = Integer.parseInt(stringInputs[j]);
+			}
+			
+			Pair<Integer,Matrix> expectedOutputPair = new Pair<Integer,Matrix>(firstInteger, inputs);
+			
+			testingData.add(expectedOutputPair);
+		}
+		
+		scanner.close();
+		scanner = new Scanner(new File(trainFileName)).useDelimiter("[,\n]");
+		
+		for (int i = 0; i < trainingSize; i++) {
+			String inputRow = scanner.nextLine();
+			String[] stringInputs = inputRow.split(",");
+			
+			Integer firstInteger = new Integer(stringInputs[0]);
+			Matrix inputs = new Matrix(inputSize, 1, false);
+			
+			for (int j = 1; j < stringInputs.length-1; j++) {
+				inputs.matrix[j][0] = Integer.parseInt(stringInputs[j]);
+			}
+			
+			Pair<Integer,Matrix> expectedOutputPair = new Pair<Integer,Matrix>(firstInteger, inputs);
+			
+			trainingData.add(expectedOutputPair);
+		}
+	}
+	
 	/* Print User Command Options */
 	private static void printOptions() {
 		System.out.println("\nPlease select an option:");
@@ -109,7 +166,7 @@ public class NeuralNetwork {
 		// if the user hasn't trained or loaded a network yet, then don't show them these following options
 		if (!firstRun) {
 			System.out.println("   [3] Display Network Accuracy on TRAINING Set");
-			System.out.println("   [4] Display Network Accuracy on TRAINING Set");
+			System.out.println("   [4] Display Network Accuracy on TESTING Set");
 			System.out.println("   [5] Save the Current Network State to File");
 		}
 		
@@ -168,10 +225,10 @@ public class NeuralNetwork {
 	}
 	
 	/* Load a Saved Neural Network */
-	private static void loadNetwork() throws FileNotFoundException{
+	private static void loadNetwork() throws FileNotFoundException {
 		createNetwork(false);
 		
-		Scanner scanner = new Scanner(new File(fileName)).useDelimiter("[,\n]");
+		Scanner scanner = new Scanner(new File(saveFileName)).useDelimiter("[,\n]");
 		scanner.nextLine();
 		
 		// figure out the maximum number of rows between all of the matrices - weights and biases
@@ -255,7 +312,7 @@ public class NeuralNetwork {
 		// this method saves all of the weights and biases we currently have for our network to an CSV file that we can later
 		// load from
 		
-		PrintWriter pw = new PrintWriter(new File(fileName));
+		PrintWriter pw = new PrintWriter(new File(saveFileName));
 		StringBuilder sb = new StringBuilder();
 		
 		// iterate through the length of weights and add a "w" to the top of each weight matrix
@@ -341,7 +398,7 @@ public class NeuralNetwork {
 			weights[i].printMatrixSize();
 			inputs.printMatrixSize();
 			
-			inputs = Matrix.dot(weights[i], inputs);
+			inputs = Matrix.multiply(weights[i], inputs);
 			//System.out.println(i + " - dot done");
 			
 			inputs = Matrix.add(inputs, biases[i]);
@@ -351,7 +408,6 @@ public class NeuralNetwork {
 			inputs.printMatrix();
 			
 			inputs = sigmoid(inputs);
-			System.out.println(i + " - sigmoid done");
 			
 			System.out.println("\na - " + i);
 			inputs.printMatrix();
@@ -376,7 +432,7 @@ public class NeuralNetwork {
 		
 		for (int i = 0; i < z.rows; i++) {
 			for (int j = 0; j < z.columns; j++) {
-				sigma.matrix[i][j] = (1.0 / (1.0 + Math.pow(e, z.matrix[i][j])));
+				sigma.matrix[i][j] = (1.0 / (1.0 + Math.pow(e, -1 * z.matrix[i][j])));
 			}
 		}
 		
@@ -413,7 +469,7 @@ public class NeuralNetwork {
 		System.out.println("\nSecondMatrix");
 		secondM.printMatrix();
 		
-		Matrix fourthM = Matrix.dot(firstM, secondM);
+		Matrix fourthM = Matrix.multiply(firstM, secondM);
 		System.out.println("\nDot Matrix");
 		if (fourthM != null)
 			fourthM.printMatrix();
@@ -457,7 +513,7 @@ class Matrix {
 	}
 	
 	/* Dot Product Between Two Matrices */
-	public static Matrix dot(Matrix A, Matrix B) {
+	public static Matrix multiply(Matrix A, Matrix B) {
 		if (A.columns == B.rows) {
 			Matrix output = new Matrix(A.rows, B.columns, false);
 			
