@@ -19,6 +19,10 @@ import java.util.ArrayList;
 public class NeuralNetwork {
 	// set up the constant of "e" - the base of the natural logarithm
 	final static double e = 2.71828;
+	final static int epochs = 30;
+	final static int miniBatchSize = 10;
+	final static double eta = 3.0;
+	
 	final static int inputSize = 784;
 	final static int trainingSize = 60000;
 	final static int testingSize = 10000;
@@ -44,11 +48,13 @@ public class NeuralNetwork {
 		
 		// create the network and load in the training set and the testing set
 		createNetwork(true);
+		/*
 		try {
 			loadDataSets();
 		} catch (FileNotFoundException e) {
 			System.out.println("Error loading data sets - " + e);
 		}
+		*/
 		
 		// start a scanner to read user input
 		Scanner scanner = new Scanner(System.in);
@@ -195,17 +201,7 @@ public class NeuralNetwork {
 				firstRun = false;
 			
 			if (input == 1) {
-				//matrixTest();
-				
-				float[] inputs = new float[] {0, 1, 0, 1};
-				float[] output = feedForward(inputs);
-				
-				if (output != null) {
-					System.out.println("\nFinal Output");
-					printVector(output);
-				}
-				else
-					System.out.println("The output is null");
+				SGD();
 			}
 			else {
 				try {
@@ -417,10 +413,7 @@ public class NeuralNetwork {
 			printVector(inputs);
 			
 			inputs = Matrix.multiply(weights[i], inputs);
-			//System.out.println(i + " - dot done");
-			
 			inputs = Matrix.add(biases[i], inputs);
-			//System.out.println(i + " - add done");
 			
 			System.out.println("Z");
 			printVector(inputs);
@@ -435,7 +428,32 @@ public class NeuralNetwork {
 	}
 	
 	private static void SGD() {
+		//TODO: DELETE THIS SECTION
+		// create temp data for now
+		List<Pair<Integer,float[]>> tempData = new ArrayList<>();
+		float[] firstInputs = new float[] {0, 1, 0, 1};
+		float[] secondInputs = new float[] {1, 0, 1, 0};
+		float[] thirdInputs = new float[] {0, 0, 1, 1};
+		float[] fourthInputs = new float[] {1, 1, 0, 0};
 		
+		Pair<Integer, float[]> firstPair = new Pair<Integer,float[]>(1, firstInputs);
+		Pair<Integer, float[]> secondPair = new Pair<Integer,float[]>(0, secondInputs);
+		Pair<Integer, float[]> thirdPair = new Pair<Integer,float[]>(1, thirdInputs);
+		Pair<Integer, float[]> fourthPair = new Pair<Integer,float[]>(0, fourthInputs);
+		
+		tempData.add(firstPair);
+		tempData.add(secondPair);
+		tempData.add(thirdPair);
+		tempData.add(fourthPair);
+		
+		float[] output = feedForward(tempData.get(0).getValue());
+		
+		if (output != null) {
+			System.out.println("\nFinal Output");
+			printVector(output);
+		}
+		else
+			System.out.println("The output is null");
 	}
 	
 	private static void backPropagate() {
