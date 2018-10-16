@@ -33,8 +33,8 @@ public class NeuralNetwork {
 	static Matrix[] biases;
 	static Matrix[] weights;
 	
-	static List<Pair<Integer,int[]>> testingData = new ArrayList<>();
-	static List<Pair<Integer,int[]>> trainingData = new ArrayList<>();
+	static List<Pair<Integer,float[]>> testingData = new ArrayList<>();
+	static List<Pair<Integer,float[]>> trainingData = new ArrayList<>();
 	
 	/* Main Function */
 	public static void main(String[] args) {
@@ -119,28 +119,35 @@ public class NeuralNetwork {
 	
 	/* Load In Training and Testing Sets */
 	private static void loadDataSets() throws FileNotFoundException {
+		
+		// start a scanner to scan through the testing file for input data
 		Scanner scanner = new Scanner(new File(testFileName)).useDelimiter("[,\n]");
 		
+		// for the size of the expected training data, we need to grab all of the data on a row
 		for (int i = 0; i < testingSize; i++) {
+			// grab the row as a single string, then split that string into an array of strings with a comma as a delimiter
 			String inputRow = scanner.nextLine();
 			String[] stringInputs = inputRow.split(",");
 			
+			// grab the first string integer and store that as the correct value for the input
 			Integer firstInteger = new Integer(stringInputs[0]);
-			int[] inputs = new int[inputSize];
+			// create a parallel array of floats that will take each item in the row, normalize it, and store it into itself
+			float[] inputs = new float[inputSize];
 			
 			for (int j = 1; j < stringInputs.length-1; j++) {
-				inputs[j] = Integer.parseInt(stringInputs[j]);
+				Float tempFloat = Float.parseFloat(stringInputs[j]);
+				inputs[j] = tempFloat / 255;
 			}
 			
-			Pair<Integer,int[]> expectedOutputPair = new Pair<Integer,int[]>(firstInteger, inputs);
-			
-			testingData.add(expectedOutputPair);
+			// create and store the pair of correct integer output and the float array of normalized output
+			testingData.add(new Pair<Integer,float[]>(firstInteger, inputs));
 		}
 		
 		System.out.println("\nTesting Data Retrieved");
 		
 		//printVector(testingData.get(9999).getValue());
 		
+		// close the scanner for that file, open the training data file, and start the process again for that data
 		scanner.close();
 		scanner = new Scanner(new File(trainFileName)).useDelimiter("[,\n]");
 		
@@ -149,22 +156,17 @@ public class NeuralNetwork {
 			String[] stringInputs = inputRow.split(",");
 			
 			Integer firstInteger = new Integer(stringInputs[0]);
-			int[] inputs = new int[inputSize];
+			float[] inputs = new float[inputSize];
 			
 			for (int j = 1; j < stringInputs.length-1; j++) {
-				inputs[j] = Integer.parseInt(stringInputs[j]);
+				Float tempFloat = Float.parseFloat(stringInputs[j]);
+				inputs[j] = tempFloat / 255;
 			}
-			stringInputs = null;
 			
-			Pair<Integer,int[]> expectedOutputPair = new Pair<Integer,int[]>(firstInteger, inputs);
-			
-			firstInteger = null;
-			inputs = null;
-			
-			trainingData.add(expectedOutputPair);
-			
-			expectedOutputPair = null;
+			trainingData.add(new Pair<Integer,float[]>(firstInteger, inputs));
 		}
+		
+		scanner.close();
 		
 		System.out.println("\nTraining Data Retrieved");
 	}
