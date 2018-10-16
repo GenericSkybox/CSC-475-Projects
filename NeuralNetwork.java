@@ -33,8 +33,8 @@ public class NeuralNetwork {
 	static Matrix[] biases;
 	static Matrix[] weights;
 	
-	static List<Pair<Integer,Matrix>> testingData = new ArrayList<>();
-	static List<Pair<Integer,Matrix>> trainingData = new ArrayList<>();
+	static List<Pair<Integer,int[]>> testingData = new ArrayList<>();
+	static List<Pair<Integer,int[]>> trainingData = new ArrayList<>();
 	
 	/* Main Function */
 	public static void main(String[] args) {
@@ -126,16 +126,20 @@ public class NeuralNetwork {
 			String[] stringInputs = inputRow.split(",");
 			
 			Integer firstInteger = new Integer(stringInputs[0]);
-			Matrix inputs = new Matrix(inputSize, 1, false);
+			int[] inputs = new int[inputSize];
 			
 			for (int j = 1; j < stringInputs.length-1; j++) {
-				inputs.matrix[j][0] = Integer.parseInt(stringInputs[j]);
+				inputs[j] = Integer.parseInt(stringInputs[j]);
 			}
 			
-			Pair<Integer,Matrix> expectedOutputPair = new Pair<Integer,Matrix>(firstInteger, inputs);
+			Pair<Integer,int[]> expectedOutputPair = new Pair<Integer,int[]>(firstInteger, inputs);
 			
 			testingData.add(expectedOutputPair);
 		}
+		
+		System.out.println("\nTesting Data Retrieved");
+		
+		//printVector(testingData.get(9999).getValue());
 		
 		scanner.close();
 		scanner = new Scanner(new File(trainFileName)).useDelimiter("[,\n]");
@@ -145,16 +149,24 @@ public class NeuralNetwork {
 			String[] stringInputs = inputRow.split(",");
 			
 			Integer firstInteger = new Integer(stringInputs[0]);
-			Matrix inputs = new Matrix(inputSize, 1, false);
+			int[] inputs = new int[inputSize];
 			
 			for (int j = 1; j < stringInputs.length-1; j++) {
-				inputs.matrix[j][0] = Integer.parseInt(stringInputs[j]);
+				inputs[j] = Integer.parseInt(stringInputs[j]);
 			}
+			stringInputs = null;
 			
-			Pair<Integer,Matrix> expectedOutputPair = new Pair<Integer,Matrix>(firstInteger, inputs);
+			Pair<Integer,int[]> expectedOutputPair = new Pair<Integer,int[]>(firstInteger, inputs);
+			
+			firstInteger = null;
+			inputs = null;
 			
 			trainingData.add(expectedOutputPair);
+			
+			expectedOutputPair = null;
 		}
+		
+		System.out.println("\nTraining Data Retrieved");
 	}
 	
 	/* Print User Command Options */
@@ -183,11 +195,13 @@ public class NeuralNetwork {
 			if (input == 1) {
 				//matrixTest();
 				
-				Matrix inputs = new Matrix(new double[][] {{0}, {1}, {0}, {1}});
-				Matrix output = feedForward(inputs);
+				float[] inputs = new float[] {0, 1, 0, 1};
+				float[] output = feedForward(inputs);
 				
-				if (output != null)
-					output.printMatrix();
+				if (output != null) {
+					System.out.println("\nFinal Output");
+					printVector(output);
+				}
 				else
 					System.out.println("The output is null");
 			}
@@ -255,8 +269,8 @@ public class NeuralNetwork {
 						if (item.contains("\n"))
 							item = item.substring(0, item.length() - 2);
 						
-						// convert the string to a double and add it to the weight matrix
-						weights[i].matrix[j][k] = Double.parseDouble(item);
+						// convert the string to a float and add it to the weight matrix
+						weights[i].matrix[j][k] = Float.parseFloat(item);
 					} catch (Exception e) {
 						// if there's an error, usually that means we're trying to grab something out of bounds, so we ignore the error
 						//System.out.println("Error in weights - " + e.toString());
@@ -277,8 +291,8 @@ public class NeuralNetwork {
 						if (item.contains("\n"))
 							item = item.substring(0, item.length() - 2);
 						
-						// convert the string to a double and add it to the weight matrix
-						biases[i].matrix[j][k] = Double.parseDouble(item);
+						// convert the string to a float and add it to the weight matrix
+						biases[i].matrix[j][k] = Float.parseFloat(item);
 					} catch (Exception e) {
 						// if there's an error, usually that means we're trying to grab something out of bounds, so we ignore the error
 						//System.out.println("Error in biases - " + e.toString());
@@ -393,24 +407,26 @@ public class NeuralNetwork {
 		//System.out.println(sb.toString());
 	}
 	
-	private static Matrix feedForward(Matrix inputs) {
+	/* Feed Forward Pass */
+	private static float[] feedForward(float[] inputs) {
 		for (int i = 0; i < weights.length; i++) {
-			weights[i].printMatrixSize();
-			inputs.printMatrixSize();
+			System.out.println("\nLayer " + i);
+			System.out.println("Inputs");
+			printVector(inputs);
 			
 			inputs = Matrix.multiply(weights[i], inputs);
 			//System.out.println(i + " - dot done");
 			
-			inputs = Matrix.add(inputs, biases[i]);
+			inputs = Matrix.add(biases[i], inputs);
 			//System.out.println(i + " - add done");
 			
-			System.out.println("\nZ - " + i);
-			inputs.printMatrix();
+			System.out.println("Z");
+			printVector(inputs);
 			
 			inputs = sigmoid(inputs);
 			
-			System.out.println("\na - " + i);
-			inputs.printMatrix();
+			System.out.println("a");
+			printVector(inputs);
 		}
 		
 		return inputs;
@@ -425,16 +441,22 @@ public class NeuralNetwork {
 	}
 	
 	/* Sigmoid Function */
-	private static Matrix sigmoid(Matrix z) {
+	private static float[] sigmoid(float[] z) {
 		// basically return (1/(1+e^z)) = y for every index in z
 		
-		Matrix sigma = z;
+		float[] sigma = z;
 		
+		for (int i = 0; i < sigma.length; i++) {
+			sigma[i] = (float) (1.0 / (1.0 + Math.pow(e, -z[i])));
+		}
+		
+		/*
 		for (int i = 0; i < z.rows; i++) {
 			for (int j = 0; j < z.columns; j++) {
-				sigma.matrix[i][j] = (1.0 / (1.0 + Math.pow(e, -1 * z.matrix[i][j])));
+				sigma.matrix[i][j] = (float) (1.0 / (1.0 + Math.pow(e, -1 * z.matrix[i][j])));
 			}
 		}
+		*/
 		
 		return sigma;
 	}
@@ -456,10 +478,23 @@ public class NeuralNetwork {
 	}
 	*/
 	
+	private static void printVector(float[] vector) {
+		System.out.print("[");
+		
+		for (int i = 0; i < vector.length; i++) {
+			System.out.print(vector[i] + "");
+			
+			if (i != vector.length - 1)
+				System.out.print(",\n ");
+			else
+				System.out.print("]\n");
+		}
+	}
+	
 	/* Test the Full Functionality of Matrices */
 	private static void matrixTest() {
-		double[][] first = {{4, -1}, {0, 5}};
-		double[][] second = {{1, 8, 0}, {6, -2, 3}};
+		float[][] first = {{4, -1}, {0, 5}};
+		float[][] second = {{1, 8, 0}, {6, -2, 3}};
 		
 		Matrix firstM = new Matrix(first);
 		System.out.println("\nFirst Matrix");
@@ -490,7 +525,7 @@ public class NeuralNetwork {
 class Matrix {
 	public final int rows;
 	public final int columns;
-	public final double[][] matrix;
+	public final float[][] matrix;
 	
 	private Random r;
 	
@@ -498,7 +533,7 @@ class Matrix {
 	public Matrix(int rows, int columns, boolean populate) {
 		this.rows = rows;
 		this.columns = columns;
-		this.matrix = new double[rows][columns];
+		this.matrix = new float[rows][columns];
 		
 		// if we want to populate the matrix, then we'll fill it with randomized real numbers
 		if (populate)
@@ -506,20 +541,20 @@ class Matrix {
 	}
 	
 	/* Constructor of an Existing Array */
-	public Matrix(double[][] oldMatrix) {
+	public Matrix(float[][] oldMatrix) {
 		this.rows = oldMatrix.length;
 		this.columns = oldMatrix[0].length;
 		this.matrix = oldMatrix;
 	}
 	
-	/* Dot Product Between Two Matrices */
+	/* Multiplication Between Two Matrices */
 	public static Matrix multiply(Matrix A, Matrix B) {
 		if (A.columns == B.rows) {
 			Matrix output = new Matrix(A.rows, B.columns, false);
 			
 			for (int i = 0; i < A.rows; i++) {
 				for (int l = 0; l < B.columns; l++) {
-					double c = 0;
+					float c = 0;
 					
 					for (int j = 0; j < A.columns && j < B.rows; j++) {
 						c += A.matrix[i][j] * B.matrix[j][l];
@@ -528,6 +563,27 @@ class Matrix {
 					output.matrix[i][l] = c;
 				}
 			}
+			return output;
+		}
+		else
+			return null;
+	}
+	
+	/* Multiplication Between A Matrix and A Vector */
+	public static float[] multiply(Matrix A, float[] B) {
+		if (A.columns == B.length) {
+			float[] output = new float[A.rows];
+			
+			for (int i = 0; i < A.rows; i++) {
+				float c = 0;
+				
+				for (int j = 0; j < A.columns; j++) {
+					c += A.matrix[i][j] * B[j];
+				}
+				
+				output[i] = c;
+			} 
+			
 			return output;
 		}
 		else
@@ -551,7 +607,22 @@ class Matrix {
 			return null;
 	}
 	
-	/* Create a Random Double For Each Position */
+	/* Addition Between Two Vectors */
+	public static float[] add(Matrix A, float[] B) {
+		if (A.rows == B.length) {
+			float[] output = new float[A.rows];
+			
+			for (int i = 0; i < A.rows; i++) {
+				output[i] = A.matrix[i][0] + B[i];
+			}
+			
+			return output;
+		}
+		else
+			return null;
+	}
+	
+	/* Create a Random Float For Each Position */
 	private void randomizeItems() {
 		// iterate through the entire matrix and fill it with random real numbers
 		
@@ -559,7 +630,7 @@ class Matrix {
 		
 		for (int i = 0; i < rows; i++) {
 			for (int j = 0; j < columns; j++) {
-				this.matrix[i][j] = r.nextDouble();
+				this.matrix[i][j] = r.nextFloat();
 			}
 		}
 	}
