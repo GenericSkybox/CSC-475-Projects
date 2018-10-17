@@ -53,11 +53,13 @@ public class NeuralNetwork {
 		
 		// create the network and load in the training set and the testing set
 		createNetwork(true);
+		/*
 		try {
 			loadDataSets();
 		} catch (FileNotFoundException e) {
 			System.out.println("Error loading data sets - " + e);
 		}
+		*/
 		
 		
 		// start a scanner to read user input
@@ -100,30 +102,14 @@ public class NeuralNetwork {
 		biases = new Matrix[layers-1];
 		weights = new Matrix[layers-1];
 		
-		// create each new weight matrix with randomized values
-		if (prefilledNetwork)
-			System.out.println("\nBiases:");
-		
+		// create each new bias matrix with randomized values
 		for (int i = 1; i < layers; i++){
 			biases[i-1] = new Matrix(layerSizes[i], 1, prefilledNetwork);
-			
-			if (prefilledNetwork) {
-				System.out.println("Layer " + i);
-				biases[i-1].printMatrix();
-			}
 		}
 		
-		// create each new bias matrix with randomized values
-		if (prefilledNetwork)
-			System.out.println("\nWeights:");
-		
+		// create each new weight matrix with randomized values
 		for (int i = 0; i < layers-1; i++) {
 			weights[i] = new Matrix(layerSizes[i+1], layerSizes[i], prefilledNetwork);
-			
-			if (prefilledNetwork) {
-				System.out.println("Layer " + i);
-				weights[i].printMatrixSize();
-			}
 		}
 	}
 	
@@ -442,6 +428,10 @@ public class NeuralNetwork {
 			// update the weights and biases for each mini batch
 			for (int miniBatch = 0; miniBatch < tempData.size(); miniBatch += tempMiniBatchSize) {
 				System.out.println("\nMiniBatch - " + miniBatch);
+				System.out.println("\nBiases for Epoch " + (i+1));
+				for (int z = 0; z < biases.length; z++) {
+					biases[z].printMatrix();
+				}
 				updateWeightsAndBiases(miniBatch);
 			}
 			
@@ -449,18 +439,6 @@ public class NeuralNetwork {
 			System.out.println("\nEpoch " + (i+1) + " Accuracy");
 			printAccuracy();
 		}
-		
-		
-		/*
-		float[] output = feedForward(tempData.get(0).getValue());
-		
-		if (output != null) {
-			System.out.println("\nFinal Output");
-			printVector(output);
-		}
-		else
-			System.out.println("The output is null");
-		*/
 	}
 	
 	/* Update All Weights and Biases */
@@ -469,11 +447,11 @@ public class NeuralNetwork {
 		int tempMiniBatchSize = 2;
 		
 		// initilize the empty bias and weight gradient Matrix arrays
-		Matrix[] biasGradients = new Matrix[biases.length];
-		Matrix[] weightGradients = new Matrix[weights.length];
+		Matrix[] biasGradients = new Matrix[layers-1];
+		Matrix[] weightGradients = new Matrix[layers-1];
 		
 		// create a new set of empty bias and weight gradients
-		for (int i = 0; i < biases.length; i++) {
+		for (int i = 0; i < layers-1; i++) {
 			Matrix bias = biases[i];
 			biasGradients[i] = new Matrix(bias.rows, bias.columns, false);
 			
@@ -489,6 +467,16 @@ public class NeuralNetwork {
 			Matrix[] newBiasGradients = gradients.get(0);
 			Matrix[] newWeightGradients = gradients.get(1);
 			
+			for (int i = 0; i < newBiasGradients.length; i++) {
+				System.out.println("\nBiasGradients in Layer " + i);
+				newBiasGradients[i].printMatrix();
+			}
+			
+			for (int i = 0; i < newWeightGradients.length; i++) {
+				System.out.println("\nWeightGradients in Layer " + i);
+				newWeightGradients[i].printMatrix();
+			}
+			
 			for (int i = 0; i < biasGradients.length; i++) {
 				biasGradients[i] = Matrix.add(biasGradients[i], newBiasGradients[i]);
 				weightGradients[i] = Matrix.add(weightGradients[i], newWeightGradients[i]);
@@ -498,12 +486,12 @@ public class NeuralNetwork {
 		//System.out.println("\nAll Weights and Bias Gradients Calculated");
 		
 		// update all of the biases and weights based on their respective gradients
-		for (int i = 0; i < biases.length; i++) {
-			biasGradients[i] = Matrix.multiply(biasGradients[i], (float) eta / tempMiniBatchSize);
-			biases[i] = Matrix.add(Matrix.multiply(biases[i], -1), biasGradients[i]);
+		for (int i = 0; i < layers-1; i++) {
+			biasGradients[i] = Matrix.multiply(biasGradients[i], (float) (tempEta / tempMiniBatchSize));
+			biases[i] = Matrix.add(biases[i], Matrix.multiply(biasGradients[i], -1));
 			
-			weightGradients[i] = Matrix.multiply(weightGradients[i], (float) eta / tempMiniBatchSize);
-			weights[i] = Matrix.add(Matrix.multiply(weights[i], -1), weightGradients[i]);
+			weightGradients[i] = Matrix.multiply(weightGradients[i], (float) (tempEta / tempMiniBatchSize));
+			weights[i] = Matrix.add(weights[i], Matrix.multiply(weightGradients[i], -1));
 		}
 		
 		//System.out.println("Biases and Weights Updated");
@@ -513,12 +501,16 @@ public class NeuralNetwork {
 	private static ArrayList<Matrix[]> backpropagation(int inputPos) {
 		ArrayList<Matrix[]> gradients = new ArrayList<>();
 		
+		// set up L as the last layer position in the biases, biasGradients, weights, weightGradients, and outputs Matrix arrays
+		// Array Lists
+		int L = layers-2;
+		
 		// initilize the empty bias and weight gradient Matrix arrays
 		Matrix[] biasGradients = new Matrix[biases.length];
 		Matrix[] weightGradients = new Matrix[weights.length];
 		
 		// create a new set of empty bias and weight gradients
-		for (int i = 0; i < biases.length; i++) {
+		for (int i = 0; i < layers-1; i++) {
 			Matrix bias = biases[i];
 			biasGradients[i] = new Matrix(bias.rows, bias.columns, false);
 			
@@ -526,22 +518,48 @@ public class NeuralNetwork {
 			weightGradients[i] = new Matrix(weight.rows, weight.columns, false);
 		}
 		
+		// FOWARD PASS
 		// perform the feed forward pass and get back its output
-		float[] output = feedForward(tempData.get(inputPos).getValue());
+		ArrayList<float[]> output = feedForward(tempData.get(inputPos).getValue());
 		
 		// compute how well the neural network did for the given input and store that accuracy
-		computeAccuracy(output, tempData.get(inputPos).getKey());
+		computeAccuracy(output.get(L), tempData.get(inputPos).getKey());
 		
 		// store the expected output as an array that's the same size as the actual output
-		float[] expectedOutput = new float[output.length];
+		float[] expectedOutput = new float[output.get(L).length];
 		expectedOutput[tempData.get(inputPos).getKey()] = 1;
 		
-		//TODO: THE BACKWARDS PASS
-		//compute the final layer of biases gradients
-		//compute the final layer of weights gradients
-		//use a for-loop to compute the final-1 layer of biases and weights for every weight and bias
-		//backwards pass
-		//compute and return weight and bias gradients
+		// BACKWARDS PASS
+		// compute the final (L) layer of bias and weight gradients
+		for (int j = 0; j < biases[L].rows; j++) {
+			biasGradients[L].matrix[j][0] = (output.get(L)[j] - expectedOutput[j]) * output.get(L)[j] * (1 - output.get(L)[j]);
+		}
+		
+		// compute the l-1 layer of bias gradients
+		for (int l = L-1; l >= 0; l--) {
+			for (int k = 0; k < biases[l].rows; k++) {
+				float bGradient = 0;
+				
+				for (int j = 0; j < biases[l+1].rows; j++) {
+					bGradient += weights[l+1].matrix[j][k] * biasGradients[l+1].matrix[j][0];
+				}
+				
+				biasGradients[l].matrix[k][0] = bGradient * output.get(l)[k] * (1 - output.get(l)[k]);
+			}
+		}
+		
+		// compute all of the weight gradients
+		for (int l = L; l >= 0; l--) {
+			for (int j = 0; j < weightGradients[l].rows; j++) {
+				for (int k = 0; k < weightGradients[l].columns; k++) {
+					if (l != 0)
+						weightGradients[l].matrix[j][k] = output.get(l-1)[k] * biasGradients[l].matrix[j][0];
+					else
+						weightGradients[l].matrix[j][k] = tempData.get(inputPos).getValue()[k] * biasGradients[l].matrix[j][0];
+				}
+			}
+		}
+		
 		
 		// add the bias and weight gradients to the master gradients list and return it
 		gradients.add(biasGradients);
@@ -550,25 +568,35 @@ public class NeuralNetwork {
 	}
 	
 	/* Feed Forward Pass */
-	private static float[] feedForward(float[] inputs) {
+	private static ArrayList<float[]> feedForward(float[] inputs) {
+		ArrayList<float[]> outputs = new ArrayList<>();
+		
 		for (int i = 0; i < weights.length; i++) {
+			/*
 			System.out.println("\nLayer " + i);
 			System.out.println("Inputs");
 			printVector(inputs);
+			*/
 			
 			inputs = Matrix.multiply(weights[i], inputs);
 			inputs = Matrix.add(biases[i], inputs);
 			
+			/*
 			System.out.println("Z");
 			printVector(inputs);
+			*/
 			
 			inputs = sigmoid(inputs);
 			
-			System.out.println("a");
+			
+			System.out.println("\na Layer - " + i);
 			printVector(inputs);
+			
+			
+			outputs.add(inputs);
 		}
 		
-		return inputs;
+		return outputs;
 	}
 	
 	/* Compute Accuracy */
@@ -632,23 +660,6 @@ public class NeuralNetwork {
 		
 		return sigma;
 	}
-	
-	/* Derivative of Sigmoid Function */
-	/*
-	private static Matrix sigmoidPrime(Matrix z) {
-		// basically return y(1 - y) for every index in z
-		
-		Matrix sigmaPrime = new Matrix(z);
-		
-		for (int i = 0; i < z.rows; i++) {
-			for (int j = 0; j < z.columns; j++) {
-				sigma.matrix[i][j] = sigmoid(z) * (1 - sigmoid(z));
-			}
-		}
-		
-		return sigmaPrime;
-	}
-	*/
 	
 	private static void printVector(float[] vector) {
 		System.out.print("[");
