@@ -40,6 +40,11 @@ public class NeuralNetwork {
 	static List<Pair<Integer,float[]>> testingData = new ArrayList<>();
 	static List<Pair<Integer,float[]>> trainingData = new ArrayList<>();
 	
+	static float[][] accuracyPairs = new float[11][2];
+	
+	
+	static List<Pair<Integer,float[]>> tempData = new ArrayList<>();
+	
 	/* Main Function */
 	public static void main(String[] args) {
 		// print the welcome statement
@@ -48,13 +53,12 @@ public class NeuralNetwork {
 		
 		// create the network and load in the training set and the testing set
 		createNetwork(true);
-		/*
 		try {
 			loadDataSets();
 		} catch (FileNotFoundException e) {
 			System.out.println("Error loading data sets - " + e);
 		}
-		*/
+		
 		
 		// start a scanner to read user input
 		Scanner scanner = new Scanner(System.in);
@@ -405,6 +409,142 @@ public class NeuralNetwork {
 		//System.out.println(sb.toString());
 	}
 	
+	/* Stochastic Gradient Descent */
+	private static void SGD() {
+		//TODO: DELETE THIS SECTION
+		// create temp data for now
+		float[] firstInputs = new float[] {0, 1, 0, 1};
+		float[] secondInputs = new float[] {1, 0, 1, 0};
+		float[] thirdInputs = new float[] {0, 0, 1, 1};
+		float[] fourthInputs = new float[] {1, 1, 0, 0};
+		
+		Pair<Integer, float[]> firstPair = new Pair<Integer,float[]>(1, firstInputs);
+		Pair<Integer, float[]> secondPair = new Pair<Integer,float[]>(0, secondInputs);
+		Pair<Integer, float[]> thirdPair = new Pair<Integer,float[]>(1, thirdInputs);
+		Pair<Integer, float[]> fourthPair = new Pair<Integer,float[]>(0, fourthInputs);
+		
+		tempData.add(firstPair);
+		tempData.add(secondPair);
+		tempData.add(thirdPair);
+		tempData.add(fourthPair);
+		
+		int tempEpoch = 6;
+		int tempMiniBatchSize = 2;
+		//
+		
+		for (int i = 0; i < tempEpoch; i++) {
+			// shuffle the training data and create mini-batches based off of them
+			Collections.shuffle(trainingData);
+			
+			// reset the accuracy array since this is a new epoch
+			accuracyPairs = new float[11][2];
+			
+			// update the weights and biases for each mini batch
+			for (int miniBatch = 0; miniBatch < tempData.size(); miniBatch += tempMiniBatchSize) {
+				System.out.println("\nMiniBatch - " + miniBatch);
+				updateWeightsAndBiases(miniBatch);
+			}
+			
+			// print out the accuracy array with a tag designating which epoch it came from
+			System.out.println("\nEpoch " + (i+1) + " Accuracy");
+			printAccuracy();
+		}
+		
+		
+		/*
+		float[] output = feedForward(tempData.get(0).getValue());
+		
+		if (output != null) {
+			System.out.println("\nFinal Output");
+			printVector(output);
+		}
+		else
+			System.out.println("The output is null");
+		*/
+	}
+	
+	/* Update All Weights and Biases */
+	private static void updateWeightsAndBiases(int startPos) {
+		double tempEta = 10;
+		int tempMiniBatchSize = 2;
+		
+		// initilize the empty bias and weight gradient Matrix arrays
+		Matrix[] biasGradients = new Matrix[biases.length];
+		Matrix[] weightGradients = new Matrix[weights.length];
+		
+		// create a new set of empty bias and weight gradients
+		for (int i = 0; i < biases.length; i++) {
+			Matrix bias = biases[i];
+			biasGradients[i] = new Matrix(bias.rows, bias.columns, false);
+			
+			Matrix weight = weights[i];
+			weightGradients[i] = new Matrix(weight.rows, weight.columns, false);
+		}
+		
+		//System.out.println("Computing Weight and Bias Gradients");
+		
+		// compute all of the bias and weight gradients based on the backpropagation method
+		for (int miniBatch = startPos; miniBatch < startPos + tempMiniBatchSize; miniBatch++) {
+			ArrayList<Matrix[]> gradients = backpropagation(miniBatch);
+			Matrix[] newBiasGradients = gradients.get(0);
+			Matrix[] newWeightGradients = gradients.get(1);
+			
+			for (int i = 0; i < biasGradients.length; i++) {
+				biasGradients[i] = Matrix.add(biasGradients[i], newBiasGradients[i]);
+				weightGradients[i] = Matrix.add(weightGradients[i], newWeightGradients[i]);
+			}
+		}
+		
+		//System.out.println("\nAll Weights and Bias Gradients Calculated");
+		
+		// update all of the biases and weights based on their respective gradients
+		for (int i = 0; i < biases.length; i++) {
+			biasGradients[i] = Matrix.multiply(biasGradients[i], (float) eta / tempMiniBatchSize);
+			biases[i] = Matrix.add(Matrix.multiply(biases[i], -1), biasGradients[i]);
+			
+			weightGradients[i] = Matrix.multiply(weightGradients[i], (float) eta / tempMiniBatchSize);
+			weights[i] = Matrix.add(Matrix.multiply(weights[i], -1), weightGradients[i]);
+		}
+		
+		//System.out.println("Biases and Weights Updated");
+	}
+	
+	/* Compute Bias and Weight Gradients Via Backpropagation */
+	private static ArrayList<Matrix[]> backpropagation(int inputPos) {
+		ArrayList<Matrix[]> gradients = new ArrayList<>();
+		
+		// initilize the empty bias and weight gradient Matrix arrays
+		Matrix[] biasGradients = new Matrix[biases.length];
+		Matrix[] weightGradients = new Matrix[weights.length];
+		
+		// create a new set of empty bias and weight gradients
+		for (int i = 0; i < biases.length; i++) {
+			Matrix bias = biases[i];
+			biasGradients[i] = new Matrix(bias.rows, bias.columns, false);
+			
+			Matrix weight = weights[i];
+			weightGradients[i] = new Matrix(weight.rows, weight.columns, false);
+		}
+		
+		// perform the feed forward pass and get back its output
+		float[] output = feedForward(tempData.get(inputPos).getValue());
+		
+		// compute how well the neural network did for the given input and store that accuracy
+		computeAccuracy(output, tempData.get(inputPos).getKey());
+		
+		// store the expected output as an array that's the same size as the actual output
+		float[] expectedOutput = new float[output.length];
+		expectedOutput[tempData.get(inputPos).getKey()] = 1;
+		
+		//backwards pass
+		//compute and return weight and bias gradients
+		
+		// add the bias and weight gradients to the master gradients list and return it
+		gradients.add(biasGradients);
+		gradients.add(weightGradients);
+		return gradients;
+	}
+	
 	/* Feed Forward Pass */
 	private static float[] feedForward(float[] inputs) {
 		for (int i = 0; i < weights.length; i++) {
@@ -427,37 +567,45 @@ public class NeuralNetwork {
 		return inputs;
 	}
 	
-	private static void SGD() {
-		//TODO: DELETE THIS SECTION
-		// create temp data for now
-		List<Pair<Integer,float[]>> tempData = new ArrayList<>();
-		float[] firstInputs = new float[] {0, 1, 0, 1};
-		float[] secondInputs = new float[] {1, 0, 1, 0};
-		float[] thirdInputs = new float[] {0, 0, 1, 1};
-		float[] fourthInputs = new float[] {1, 1, 0, 0};
+	/* Compute Accuracy */
+	private static void computeAccuracy(float[] output, int expectedOutput) {
+		float bestGuessPercent = 0;
+		int bestGuessPosition = 0;
 		
-		Pair<Integer, float[]> firstPair = new Pair<Integer,float[]>(1, firstInputs);
-		Pair<Integer, float[]> secondPair = new Pair<Integer,float[]>(0, secondInputs);
-		Pair<Integer, float[]> thirdPair = new Pair<Integer,float[]>(1, thirdInputs);
-		Pair<Integer, float[]> fourthPair = new Pair<Integer,float[]>(0, fourthInputs);
-		
-		tempData.add(firstPair);
-		tempData.add(secondPair);
-		tempData.add(thirdPair);
-		tempData.add(fourthPair);
-		
-		float[] output = feedForward(tempData.get(0).getValue());
-		
-		if (output != null) {
-			System.out.println("\nFinal Output");
-			printVector(output);
+		for (int i = 0; i < output.length; i++) {
+			if (output[i] > bestGuessPercent) {
+				bestGuessPercent = output[i];
+				bestGuessPosition = i;
+			}
 		}
-		else
-			System.out.println("The output is null");
+		
+		accuracyPairs[expectedOutput][1] += 1;
+		accuracyPairs[10][1] += 1;
+		
+		if (bestGuessPosition == expectedOutput) {
+			accuracyPairs[expectedOutput][0] += 1;
+			accuracyPairs[10][0] += 1;
+		}
 	}
 	
-	private static void backPropagate() {
+	/* Print the Accuracy Array with Proper Formatting */
+	private static void printAccuracy() {
+		for (int i = 0; i < accuracyPairs.length-1; i++) {
+			System.out.print(i + " = "+ accuracyPairs[i][0] + "/" + accuracyPairs[i][1] + " ");
+			
+			if (i == 5) {
+				System.out.print("\n");
+			}
+		}
 		
+		double accuracyPercent = 00.000;
+		try {
+			accuracyPercent = (accuracyPairs[10][0] / accuracyPairs[10][1] * 100);
+		} catch (Exception e) {
+			System.out.println("Error calculating accuracy percent - " + e);
+		}
+		
+		System.out.print("Accuracy = " + accuracyPairs[10][0] + "/" + accuracyPairs[10][1] + " = " + accuracyPercent + "%\n");
 	}
 	
 	/* Sigmoid Function */
@@ -589,7 +737,7 @@ class Matrix {
 			return null;
 	}
 	
-	/* Multiplication Between A Matrix and A Vector */
+	/* Multiplication Between a Matrix and a Vector */
 	public static float[] multiply(Matrix A, float[] B) {
 		if (A.columns == B.length) {
 			float[] output = new float[A.rows];
@@ -608,6 +756,18 @@ class Matrix {
 		}
 		else
 			return null;
+	}
+	
+	/* Multiplication Between a Matrix and a Scalar */
+	public static Matrix multiply(Matrix A, float B) {
+		Matrix output = new Matrix(A.rows, A.columns, false);
+		
+		for (int i = 0; i < A.rows; i++) {
+			for (int j = 0; j < A.columns; j++) {
+				output.matrix[i][j] = A.matrix[i][j] * B;
+			}
+		}
+		return output;
 	}
 	
 	/* Addition Between Two Matrices */
