@@ -536,6 +536,10 @@ public class NeuralNetwork {
 		float[] expectedOutput = new float[output.length];
 		expectedOutput[tempData.get(inputPos).getKey()] = 1;
 		
+		//TODO: THE BACKWARDS PASS
+		//compute the final layer of biases gradients
+		//compute the final layer of weights gradients
+		//use a for-loop to compute the final-1 layer of biases and weights for every weight and bias
 		//backwards pass
 		//compute and return weight and bias gradients
 		
