@@ -19,48 +19,64 @@ import java.util.ArrayList;
 public class NeuralNetwork {
 	// set up the constant of "e" - the base of the natural logarithm
 	final static double e = 2.71828;
-	final static int epochs = 2;
+	
+	// set up the number of epochs, each mini batch size, and the learning rate
+	final static int epochs = 30;
 	final static int miniBatchSize = 10;
 	final static double eta = 3.0;
 	
+	// set up the size of the input we're expected, along with the size of the training and test sets
 	final static int inputSize = 784;
 	final static int trainingSize = 60000;
 	final static int testingSize = 10000;
+	
+	// set up the names of the files we'll be accessing
 	final static String saveFileName = "test.csv";
 	final static String trainFileName = "mnist_train.csv";
 	final static String testFileName = "mnist_test.csv";
 	
+	// use a boolean to keep track of whether or not the user can see all of the options yet
 	static boolean firstRun = true;
 	
-	static int layers;
+	// initialize the size of each layer, and declare variables for the number of layers
 	static int[] layerSizes = {784, 30, 10};
+	static int layers;
+	
+	// declare the Matrix arrays for each weight between layers and each bias on each layer after the first
 	static Matrix[] biases;
 	static Matrix[] weights;
 	
+	// initialize the lists of testing data and training data, where each list will contain a pair
+	// each pair will put the correct output first and then the array of inputs
 	static List<Pair<Integer,float[]>> testingData = new ArrayList<>();
 	static List<Pair<Integer,float[]>> trainingData = new ArrayList<>();
 	
+	// initialize a 2D array of accuracy pairs, where the first row will determine the amount correct and the second row
+	// will determine the total amount; each column corresponds to an expected output (i.e. 0 to 9 plus total accuracy)
 	static int[][] accuracyPairs = new int[11][2];
 	
+	// create a global scanner for reading user input (stdin)
 	static Scanner scanner;
-	
-	
-	//static List<Pair<Integer,float[]>> tempData = new ArrayList<>();
 	
 	/* Main Function */
 	public static void main(String[] args) {
+		/*
+		this is the main function where process control starts at; it also contains the main process while-loop through
+		which users can enter in commands
+		*/
+		
 		// print the welcome statement
 		System.out.println("\fWelcome to Eric Ortiz's MNIST Digit Recognizer!\n");
 		
-		// create the network and load in the training set and the testing set
-		createNetwork(true);
+		// create the network and load in the training and testing data from a file
+		createNetwork();
 		try {
 			loadDataSets();
 		} catch (FileNotFoundException e) {
 			System.out.println("Error loading data sets - " + e);
 		}
 		
-		// start a scanner to read user input
+		// start the scanner to read user input
 		scanner = new Scanner(System.in);
 		
 		// main operation loop where the user can continually submit input until they exit (or the program crashes :D)
@@ -71,12 +87,14 @@ public class NeuralNetwork {
 			// grab the user's input
 			String input = scanner.next();
 			
+			// try to capture and parse the user input
 			try {
 				int response = Integer.parseInt(input);
 				
-				// if the response was zero, break from the for-loop to exit the program, otherwise, perform the function requested
+				// if the response was zero, break from the for-loop to exit the program
 				if (response == 0)
 					break;
+				// otherwise, perform the function requested
 				else
 					parseInput(response);
 				
@@ -91,30 +109,36 @@ public class NeuralNetwork {
 	}
 	
 	/* Create a New Neural Network */
-	private static void createNetwork(boolean prefilledNetwork) {
-		// this method creates all of the randomized weights and biases for the neural network based on our amount of layers
-		// and each of their sizes
+	private static void createNetwork() {
+		/* 
+		this method creates all of the randomized weights and biases for the neural network based on our amount of layers
+		and each layer's size
+		*/
 		
-		// first declare the arrays of matrices for the weights and biases to be the size of the neural network minus 1
+		// first initialize the size of the network and use that size to determine the number of weight matrices and bias vectors
 		layers = layerSizes.length;
 		biases = new Matrix[layers-1];
 		weights = new Matrix[layers-1];
 		
 		// create each new bias matrix with randomized values
 		for (int i = 1; i < layers; i++){
-			biases[i-1] = new Matrix(layerSizes[i], 1, prefilledNetwork);
+			biases[i-1] = new Matrix(layerSizes[i], 1, true);
 		}
 		
 		// create each new weight matrix with randomized values
 		for (int i = 0; i < layers-1; i++) {
-			weights[i] = new Matrix(layerSizes[i+1], layerSizes[i], prefilledNetwork);
+			weights[i] = new Matrix(layerSizes[i+1], layerSizes[i], true);
 		}
 	}
 	
 	/* Load In Training and Testing Sets */
 	private static void loadDataSets() throws FileNotFoundException {
+		/*
+		this method reads in all of the training and testing data of the MNIST data sets and stores them upfront;
+		the data sets should be in two separate CSV files, each labelled appropriately at the top of the program
+		*/
 		
-		// start a scanner to scan through the testing file for input data
+		// start a scanner to read through the testing file for input data
 		Scanner fileScanner = new Scanner(new File(testFileName)).useDelimiter("[,\n]");
 		
 		// for the size of the expected training data, we need to grab all of the data on a row
@@ -123,11 +147,13 @@ public class NeuralNetwork {
 			String inputRow = fileScanner.nextLine();
 			String[] stringInputs = inputRow.split(",");
 			
-			// grab the first string integer and store that as the correct value for the input
+			// grab the first string as an integer and store that as the correct value for the input
 			Integer firstInteger = new Integer(stringInputs[0]);
-			// create a parallel array of floats that will take each item in the row, normalize it, and store it into itself
+			
+			// create an array of floats that will match the expected inputsize; this array will parallel the string array of inputs
 			float[] inputs = new float[inputSize];
 			
+			// fill up the float array with the float conversions of the string input; be sure to normalize each input!
 			for (int j = 1; j < stringInputs.length-1; j++) {
 				Float tempFloat = Float.parseFloat(stringInputs[j]);
 				inputs[j] = tempFloat / 255;
@@ -137,14 +163,15 @@ public class NeuralNetwork {
 			testingData.add(new Pair<Integer,float[]>(firstInteger, inputs));
 		}
 		
+		// print completion
 		System.out.println("\nTesting Data Retrieved");
 		
-		//printVector(testingData.get(9999).getValue());
-		
-		// close the scanner for that file, open the training data file, and start the process again for that data
+		// close the scanner for the testing data file, open the training data file, and start the process again for that data
 		fileScanner.close();
 		fileScanner = new Scanner(new File(trainFileName)).useDelimiter("[,\n]");
 		
+		// this for-loop is exactly the same as the one above, except the variables relate to the training data
+		// rather than the testing data
 		for (int i = 0; i < trainingSize; i++) {
 			String inputRow = fileScanner.nextLine();
 			String[] stringInputs = inputRow.split(",");
@@ -160,56 +187,76 @@ public class NeuralNetwork {
 			trainingData.add(new Pair<Integer,float[]>(firstInteger, inputs));
 		}
 		
+		// close the scanner and print completion
 		fileScanner.close();
-		
-		System.out.println("\nTraining Data Retrieved");
+		System.out.println("\nTraining Data Retrieved\n");
 	}
 	
 	/* Print User Command Options */
 	private static void printOptions() {
+		/*
+		this method prints out all of the options of the user, unless they just opened the application
+		*/
+		
+		// print the preliminary options
 		System.out.println("\nPlease select an option:");
 		System.out.println("\t[1] Train the Network");
 		System.out.println("\t[2] Load a Pre-Trained Network");
 		
 		// if the user hasn't trained or loaded a network yet, then don't show them these following options
 		if (!firstRun) {
+			// print additional options
 			System.out.println("\t[3] Display Network Accuracy on TRAINING Set");
 			System.out.println("\t[4] Display Network Accuracy on TESTING Set");
 			System.out.println("\t[5] Save the Current Network State to File");
 		}
 		
+		// print the exit option
 		System.out.println("\t[0] Exit\n");
 	}
 	
 	/* Parse User Command */
 	private static void parseInput(int input) {
+		/*
+		this method parses through all of the input sent to the command line from the main menu; depending on the command
+		the program will execute different functions
+		*/
+		
+		// if the user wants to train the network or load a network
 		if (input == 1 || input == 2) {
-			// this is no longer the program's first run
-			if (firstRun)
-				firstRun = false;
-			
+			// if the user wish to train the network, run the Stochastic Gradient Descent algorithm on the current weights and biases
 			if (input == 1) {
 				SGD();
 			}
+			// if the user wishes to load a pre-trained network, then we'll load it in
 			else {
 				try {
-					loadNetworkNew();
+					loadNetwork();
 				} catch (FileNotFoundException e) {
 					System.out.println("Error saving file - " + e.toString());
 				}
 			}
+			
+			// once the network has been trained or loaded, we can display all of the options
+			if (firstRun)
+				firstRun = false;
 		}
+		// if the user selects the option to display network accuracy or save a network
 		else if (input <= 5) {
 			// if this is the program's first run, treat the input as invalid
 			if (firstRun)
 				System.out.println("The integer you submitted is not a valid command.\n");
+			// else, either
 			else {
+				// display network accuracy on training set
 				if (input == 3) {
 					testNetworkAccuracy(trainingData);
 				}
+				// display network accuracy on testing set
 				else if (input == 4) {
 					testNetworkAccuracy(testingData);
 				}
+				// save the network (barring file errors)
 				else {
 					try {
 						saveNetworkNew();
@@ -219,30 +266,47 @@ public class NeuralNetwork {
 				}
 			}
 		}
+		// if the user submits any other option, consider it invalid
 		else {
 			System.out.println("The integer you submitted is not a valid command.\n");
 		}
 	}
 	
-	private static void loadNetworkNew() throws FileNotFoundException {
+	/* Load Existing Network */
+	private static void loadNetwork() throws FileNotFoundException {
+		/*
+		this method will load in an existing, pre-trained neural network by storing all of the weights and biases that it
+		reads from the designated filename
+		*/
+		
+		// create a new scanner to iterate through all of the items in the network's CSV file
 		Scanner fileScanner = new Scanner(new File(saveFileName)).useDelimiter("[,\n]");
 		
+		// iterate through every layer of the network and scan through each row of the CSV
 		for (int l = 0; l < layers-1; l++) {
+			// skip the 'w'
 			fileScanner.nextLine();
 			
+			// iterate through all of the rows of the file until we reach the end of that weight matrix
 			for (int i = 0; i < weights[l].rows; i++) {
+				// just like loading in the data set, load in each row a giant string and convert it to an array of strings
 				String weightRow = fileScanner.nextLine();
 				String[] weightStrings = weightRow.split(",");
 				
+				// then store the array of strings as an array of floats for that row in the weight matrix
 				for (int j = 0; j < weightStrings.length; j++) {
 					Float weight = Float.parseFloat(weightStrings[j]);
 					weights[l].matrix[i][j] = weight;
 				}
 			}
 			
+			// skip the 'b'
 			fileScanner.nextLine();
 			
+			// iterate through all of the rows of the file until we reach the end of that bias "matrix"
 			for (int i = 0; i < biases[l].rows; i++) {
+				// since the bias "matrix" is actually a vector of rows, we just take the first and only item on each row
+				// of the file and store that as the bias
 				String biasRow = fileScanner.nextLine();
 				String[] biasStrings = biasRow.split(",");
 				
@@ -251,20 +315,26 @@ public class NeuralNetwork {
 			}
 		}
 		
+		// close the file scanner to plug up them leaks
 		fileScanner.close();
 	}
 	
+	/* Save the Network's Weights and Biases */
 	private static void saveNetworkNew() throws FileNotFoundException {
 		// this method saves all of the weights and biases we currently have for our network to an CSV file that we can later
 		// load from
 		
-		// create a print writer and string builder so we can write a new string to the file
+		// create a print writer and string builder so we can write all of the weights and biases to a file dynamically
 		PrintWriter pw = new PrintWriter(new File(saveFileName));
 		StringBuilder sb = new StringBuilder();
 		
+		// iterate through all of the layers (i.e. length of the weights and biases arrays) to print all of the weights and biases
 		for (int l = 0; l < layers-1; l++) {
+			// mark which layer this set of weights is from
 			sb.append("w" + l + "\n");
 			
+			// iterate through each row and column of the weight matrices, printing each weight with a comma after it and
+			// printing a new line character after each row is complete
 			for (int i = 0; i < weights[l].rows; i++) {
 				for (int j = 0; j < weights[l].columns; j++) {
 					sb.append(weights[l].matrix[i][j] + ",");
@@ -272,47 +342,36 @@ public class NeuralNetwork {
 				sb.append("\n");
 			}
 			
+			// mark which layer this set of biases is from
 			sb.append("b" + l + "\n");
 			
+			// iterate through the bias vector and print each bias with a comma and newline character after each
 			for (int i = 0; i < biases[l].rows; i++) {
 				sb.append(biases[l].matrix[i][0] + ",\n");
 			}
 		}
 		
-		// finally write that mega matrix to a file and close the file
+		// finally write that supermassive string to the file and close the file writer
 		pw.write(sb.toString());
 		pw.close();
 	}
 	
 	/* Stochastic Gradient Descent */
 	private static void SGD() {
-		//TODO: DELETE THIS SECTION
-		// create temp data for now
 		/*
-		float[] firstInputs = new float[] {0, 1, 0, 1};
-		float[] secondInputs = new float[] {1, 0, 1, 0};
-		float[] thirdInputs = new float[] {0, 0, 1, 1};
-		float[] fourthInputs = new float[] {1, 1, 0, 0};
-		
-		Pair<Integer, float[]> firstPair = new Pair<Integer,float[]>(1, firstInputs);
-		Pair<Integer, float[]> secondPair = new Pair<Integer,float[]>(0, secondInputs);
-		Pair<Integer, float[]> thirdPair = new Pair<Integer,float[]>(1, thirdInputs);
-		Pair<Integer, float[]> fourthPair = new Pair<Integer,float[]>(0, fourthInputs);
-		
-		tempData.add(firstPair);
-		tempData.add(secondPair);
-		tempData.add(thirdPair);
-		tempData.add(fourthPair);
-		
-		int tempEpoch = 6;
-		int tempMiniBatchSize = 2;
+		this method peforms the entire Stochastic Gradient Descent algorithm on the currently loaded weights and biases
+		with the enormous training data that's preloaded in
 		*/
+		
+		// create some variables that will aid us in keeping track of how long each epoch and the entire algorithm performs
 		long totalStartTime = System.currentTimeMillis();
 		long totalEndTime;
 		long startTime;
 		long endTime;
 		
+		// this is the main epoch loop - after each loop, we go back through all of the data again
 		for (int i = 0; i < epochs; i++) {
+			// set the start time for this epoch
 			startTime = System.currentTimeMillis();
 			
 			// shuffle the training data and create mini-batches based off of them
@@ -323,14 +382,6 @@ public class NeuralNetwork {
 			
 			// update the weights and biases for each mini batch
 			for (int miniBatch = 0; miniBatch < trainingData.size(); miniBatch += miniBatchSize) {
-				/*
-				System.out.println("\nMiniBatch - " + miniBatch);
-				System.out.println("\nBiases for Epoch " + (i+1));
-				for (int z = 0; z < biases.length; z++) {
-					biases[z].printMatrix();
-				}
-				*/
-				
 				updateWeightsAndBiases(miniBatch);
 			}
 			
@@ -343,18 +394,16 @@ public class NeuralNetwork {
 			System.out.println("Time for Epoch Completion - " + ((endTime - startTime) / 1000) + " seconds");
 		}
 		
+		// print out the total time for completing the entire algorithm
 		totalEndTime = System.currentTimeMillis();
 		System.out.println("Time for Entire Completion - " + ((totalEndTime - totalStartTime) / 1000) + " seconds");
 		
+		// reset the accuracy pairing (so that we don't add on to it again when printing accuracy later)
 		accuracyPairs = new int[11][2];
 	}
 	
 	/* Update All Weights and Biases */
 	private static void updateWeightsAndBiases(int startPos) {
-		/*
-		double tempEta = 10;
-		int tempMiniBatchSize = 2;
-		*/
 		
 		// initilize the empty bias and weight gradient Matrix arrays
 		Matrix[] biasGradients = new Matrix[layers-1];
@@ -376,18 +425,6 @@ public class NeuralNetwork {
 			ArrayList<Matrix[]> gradients = backpropagation(miniBatch);
 			Matrix[] newBiasGradients = gradients.get(0);
 			Matrix[] newWeightGradients = gradients.get(1);
-			
-			/*
-			for (int i = 0; i < newBiasGradients.length; i++) {
-				System.out.println("\nBiasGradients in Layer " + i);
-				newBiasGradients[i].printMatrix();
-			}
-			
-			for (int i = 0; i < newWeightGradients.length; i++) {
-				System.out.println("\nWeightGradients in Layer " + i);
-				newWeightGradients[i].printMatrix();
-			}
-			*/
 			
 			for (int i = 0; i < biasGradients.length; i++) {
 				biasGradients[i] = Matrix.add(biasGradients[i], newBiasGradients[i]);
@@ -671,35 +708,6 @@ public class NeuralNetwork {
 			else
 				System.out.print("]\n");
 		}
-	}
-	
-	/* Test the Full Functionality of Matrices */
-	private static void matrixTest() {
-		float[][] first = {{4, -1}, {0, 5}};
-		float[][] second = {{1, 8, 0}, {6, -2, 3}};
-		
-		Matrix firstM = new Matrix(first);
-		System.out.println("\nFirst Matrix");
-		firstM.printMatrix();
-		
-		Matrix secondM = new Matrix(second);
-		System.out.println("\nSecondMatrix");
-		secondM.printMatrix();
-		
-		Matrix fourthM = Matrix.multiply(firstM, secondM);
-		System.out.println("\nDot Matrix");
-		if (fourthM != null)
-			fourthM.printMatrix();
-		else
-			System.out.println("The Dot Product is null");
-		
-		
-		Matrix thirdM = Matrix.add(firstM, secondM);
-		System.out.println("\nSum Matrix");
-		if (thirdM != null)
-			thirdM.printMatrix();
-		else
-			System.out.println("The Sum is null");
 	}
 }
 
