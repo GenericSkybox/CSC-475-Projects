@@ -193,7 +193,7 @@ public class NeuralNetwork {
 			}
 			else {
 				try {
-					loadNetwork();
+					loadNetworkNew();
 				} catch (FileNotFoundException e) {
 					System.out.println("Error saving file - " + e.toString());
 				}
@@ -212,7 +212,7 @@ public class NeuralNetwork {
 				}
 				else {
 					try {
-						saveNetwork();
+						saveNetworkNew();
 					} catch (FileNotFoundException e) {
 						System.out.println("Error saving file - " + e.toString());
 					}
@@ -224,173 +224,64 @@ public class NeuralNetwork {
 		}
 	}
 	
-	/* Load a Saved Neural Network */
-	private static void loadNetwork() throws FileNotFoundException {
-		createNetwork(false);
-		
+	private static void loadNetworkNew() throws FileNotFoundException {
 		Scanner fileScanner = new Scanner(new File(saveFileName)).useDelimiter("[,\n]");
-		fileScanner.nextLine();
 		
-		// figure out the maximum number of rows between all of the matrices - weights and biases
-		int rowsMax = 0;
-		for (int i = 0; i < weights.length; i++) {
-			if (weights[i].rows > rowsMax)
-				rowsMax = weights[i].rows;
+		for (int l = 0; l < layers-1; l++) {
+			fileScanner.nextLine();
 			
-			if (biases[i].rows > rowsMax)
-				rowsMax = biases[i].rows;
-		}
-		
-		// iterate through all of the rows of this "mega matrix" that we'll be pulling from the CSV file
-		for (int j = 0; j < rowsMax; j++) {
-			// iterate through all of the weights matrices
-			for (int i = 0; i < weights.length; i++) {
-				// iterate through all of the columns in a weight matrix and grab its value from the mega matrix
-				for (int k = 0; k < weights[i].columns; k++) {
-					try {
-						// grab the next item in the list as a String
-						String item = fileScanner.next();
-						
-						// if the item has a newline attached to it, remove it
-						if (item.contains("\n"))
-							item = item.substring(0, item.length() - 2);
-						
-						// convert the string to a float and add it to the weight matrix
-						weights[i].matrix[j][k] = Float.parseFloat(item);
-					} catch (Exception e) {
-						// if there's an error, usually that means we're trying to grab something out of bounds, so we ignore the error
-						//System.out.println("Error in weights - " + e.toString());
-						
-						continue;
-					}
+			for (int i = 0; i < weights[l].rows; i++) {
+				String weightRow = fileScanner.nextLine();
+				String[] weightStrings = weightRow.split(",");
+				
+				for (int j = 0; j < weightStrings.length; j++) {
+					Float weight = Float.parseFloat(weightStrings[j]);
+					weights[l].matrix[i][j] = weight;
 				}
 			}
 			
-			// iterate through all of the bias matrices
-			for (int i = 0; i < biases.length; i++) {
-				// iterate through all of the columns in a bias matrix and grab its value from the mega matrix
-				for (int k = 0; k < biases[i].columns; k++) {
-					try {
-						String item = fileScanner.next();
-						
-						// if the item has a newline attached to it, remove it
-						if (item.contains("\n"))
-							item = item.substring(0, item.length() - 2);
-						
-						// convert the string to a float and add it to the weight matrix
-						biases[i].matrix[j][k] = Float.parseFloat(item);
-					} catch (Exception e) {
-						// if there's an error, usually that means we're trying to grab something out of bounds, so we ignore the error
-						//System.out.println("Error in biases - " + e.toString());
-						
-						continue;
-					}
-				}
+			fileScanner.nextLine();
+			
+			for (int i = 0; i < biases[l].rows; i++) {
+				String biasRow = fileScanner.nextLine();
+				String[] biasStrings = biasRow.split(",");
+				
+				Float bias = Float.parseFloat(biasStrings[0]);
+				biases[l].matrix[i][0] = bias;
 			}
 		}
-		
-		
-		/*
-		// print the weights and biases as a sanity check
-		System.out.println();
-		for (int i = 0; i < weights.length; i++) {
-			System.out.println("W" + i);
-			weights[i].printMatrix();
-		}
-		
-		for (int i = 0; i < biases.length; i++) {
-			System.out.println("B" + i);
-			biases[i].printMatrix();
-		}
-		*/
 		
 		fileScanner.close();
 	}
 	
-	/* Save Current Weights and Biases */
-	private static void saveNetwork() throws FileNotFoundException {
+	private static void saveNetworkNew() throws FileNotFoundException {
 		// this method saves all of the weights and biases we currently have for our network to an CSV file that we can later
 		// load from
 		
+		// create a print writer and string builder so we can write a new string to the file
 		PrintWriter pw = new PrintWriter(new File(saveFileName));
 		StringBuilder sb = new StringBuilder();
 		
-		// iterate through the length of weights and add a "w" to the top of each weight matrix
-		for (int i = 0; i < weights.length; i++) {
-			sb.append("w" + i);
+		for (int l = 0; l < layers-1; l++) {
+			sb.append("w" + l + "\n");
 			
-			// we need to add a comma for each column that's in the weight matrix
-			for (int j = 0; j < weights[i].columns; j++) {
-				sb.append(",");
-			}
-		}
-		
-		// iterate through the length of biases and add a "w" to the top of each bias matrix
-		for (int i = 0; i < biases.length; i++) {
-			sb.append("b" + i);
-			
-			// we need to add a comma for each column that's in the bias matrix
-			for (int j = 0; j < biases[i].columns; j++) {
-				sb.append(",");
-			}
-		}
-		// the actual matrices will be written onto the next line
-		sb.append("\n");
-		
-		// figure out the maximum number of rows between all of the matrices - weights and biases
-		int rowsMax = 0;
-		for (int i = 0; i < weights.length; i++) {
-			if (weights[i].rows > rowsMax)
-				rowsMax = weights[i].rows;
-			
-			if (biases[i].rows > rowsMax)
-				rowsMax = biases[i].rows;
-		}
-		
-		// iterate through all of the rows of this "mega matrix" that we'll be putting into the CSV file
-		for (int j = 0; j < rowsMax; j++) {
-			// iterate through all of the weights matrices
-			for (int i = 0; i < weights.length; i++) {
-				// iterate through all of the columns in a weight matrix and add its value to the mega matrix
-				for (int k = 0; k < weights[i].columns; k++) {
-					try {
-						sb.append(weights[i].matrix[j][k] + "");
-					} catch (Exception e) {
-						sb.append(",");
-						continue;
-					}
-					
-					sb.append(",");
+			for (int i = 0; i < weights[l].rows; i++) {
+				for (int j = 0; j < weights[l].columns; j++) {
+					sb.append(weights[l].matrix[i][j] + ",");
 				}
+				sb.append("\n");
 			}
 			
-			// iterate through all of the bias matrices
-			for (int i = 0; i < biases.length; i++) {
-				// iterate through all of the columns in a bias matrix and add its value to the mega matrix
-				for (int k = 0; k < biases[i].columns; k++) {
-					try {
-						sb.append(biases[i].matrix[j][k] + "");
-					} catch (Exception e) {
-						continue;
-					}
-					
-					// if we reach the end of the array of bias matrices and this is the last column in the bias matrix, then start
-					// the next row
-					if (i == biases.length-1 && k == biases[i].columns-1) {
-						sb.append("\n");
-					}
-					else{
-						sb.append(",");
-					}
-				}
+			sb.append("b" + l + "\n");
+			
+			for (int i = 0; i < biases[l].rows; i++) {
+				sb.append(biases[l].matrix[i][0] + ",\n");
 			}
 		}
 		
 		// finally write that mega matrix to a file and close the file
 		pw.write(sb.toString());
 		pw.close();
-		
-		//System.out.println(sb.toString());
 	}
 	
 	/* Stochastic Gradient Descent */
@@ -454,6 +345,8 @@ public class NeuralNetwork {
 		
 		totalEndTime = System.currentTimeMillis();
 		System.out.println("Time for Entire Completion - " + ((totalEndTime - totalStartTime) / 1000) + " seconds");
+		
+		accuracyPairs = new int[11][2];
 	}
 	
 	/* Update All Weights and Biases */
@@ -677,6 +570,10 @@ public class NeuralNetwork {
 		
 		try {
 			response = Integer.parseInt(responseString);
+			
+			if (response != 1 && response != 2)
+				continueTest = false;
+			
 		} catch (Exception e) {
 			continueTest = false;
 			response = 0;
