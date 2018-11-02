@@ -5,16 +5,24 @@ import android.util.Pair;
 
 import java.util.ArrayList;
 
-/*********************************
- Created by eortiz on 10/29/2018.
- **********************************/
 public class Board {
+    /***********
+     * GLOBALS
+     ***********/
+
+    // initialize the enums used to determine what color is at each square on the board
     public enum State {
         EMPTY, BLACK, WHITE, VALID
     }
 
+    // the foundation of the board Object is centered around a 2D-array of states
     public State[][] boardState = new State[8][8];
 
+    /****************
+     * CONSTRUCTORS
+     ****************/
+
+    /* Default Constructor */
     public Board() {
         // iterate through all squares and make them empty except for the X in the middle of the board
         for (int i = 0; i < boardState.length; i++) {
@@ -31,6 +39,10 @@ public class Board {
         // check for all valid moves for black pieces (since black starts first)
         checkForAllValidMoves(State.BLACK);
     }
+
+    /***********
+     * METHODS
+     ***********/
 
     public void checkForAllValidMoves(State currentTurnColor) {
         // iterate through the entire board and check each empty square's validity as a move for the
@@ -209,7 +221,7 @@ public class Board {
         return inbetweenPieces;
     }
 
-    public void printBoard() {
+    public void printASCIIBoard() {
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
 

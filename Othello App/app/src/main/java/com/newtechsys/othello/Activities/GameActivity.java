@@ -15,11 +15,17 @@ import com.newtechsys.othello.R;
 import java.util.ArrayList;
 
 public class GameActivity extends AppCompatActivity {
+    /***********
+     * GLOBALS
+     ***********/
 
+    // tag the activity for debug statements
     final static String TAG = "!GameActivity";
 
+    // create a board that will be used to keep track of piece placements
     Board board;
 
+    // initialize some string constants to display depending on the state of the game
     final String turnPlayer1 = "Player 1's Turn";
     final String turnPlayer2 = "Player 2's Turn";
     final String turnSkipPlayer1 = "Skipped Player 1's Turn\nPlayer 2's Turn";
@@ -28,6 +34,7 @@ public class GameActivity extends AppCompatActivity {
     final String turnWinner2 = "Player 2 Wins!";
     final String turnWinnerTie = "It's a Tie!";
 
+    // declare all of the views used in the layout that will be altered throughout the course of play
     public ImageButton[][] squares = new ImageButton[8][8];
     public ImageView player1ColorImage;
     public ImageView player2ColorImage;
@@ -35,38 +42,68 @@ public class GameActivity extends AppCompatActivity {
     public TextView player2Score;
     public TextView turnIndicator;
 
+    // keep track of the both player's color and which player is making the next move
     public Board.State currentPlayerColor;
     public Board.State player1Color;
     public Board.State player2Color;
 
+    // keep track of how many black and white pieces are on the board
     public int whitePieces = 2;
     public int blackPieces = 2;
 
+    // used to block the player from making more moves after the game is over
     public boolean isGameOver = false;
 
+    // declare extras from the previous activity
     Bundle extras;
+
+    /**********************
+     * ACTIVITY LIFECYCLE
+     **********************/
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // this method is called whenever the user starts a new game - it initializes a new board
+        // and sets up all of the variables needed to play a game of Othello
+
+        // create the activity and set up its layout
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
 
+        // determine what color player 1 and player 2 is
         getPlayerColor();
+
+        // initialize the views for the squares on the board and the other score-keeping views around
+        // the board
         initializeBoardViews();
         initializeScoreKeeping();
 
+        // create a new board object that will keep track of the color of each square on the visual
+        // board
         board = new Board();
-        board.printBoard();
+        board.printASCIIBoard();
 
+        // Othello always starts with black pieces first
         currentPlayerColor = Board.State.BLACK;
 
+        // update the board visually to match the board object and also update date the scores
         updateBoard();
         updateScores();
     }
 
-    private void getPlayerColor() {
+    /***********
+     * METHODS
+     ***********/
+
+    /* Determine the Color of Each Player */
+    public void getPlayerColor() {
+        // this method grabs the extras sent from the previous activity and uses those to determine
+        // which color player 1 is supposed to be
+
+        // make sure we have extras in the first place and default to player 1 being black otherwise
         extras = getIntent().getExtras();
         if (extras != null) {
+            // store the color of player 1 and 2 depending on the extra
             if (extras.getBoolean("StartingBlack")) {
                 player1Color = Board.State.BLACK;
                 player2Color = Board.State.WHITE;
@@ -83,8 +120,11 @@ public class GameActivity extends AppCompatActivity {
         }
     }
 
-    /* Initialize All Views for the Board */
-    private void initializeBoardViews() {
+    /* Initialize All Squares for the Board */
+    public void initializeBoardViews() {
+        // this method stores all of the image buttons that represent squares on the board as a 2D
+        // array of button
+
         // row 0
         squares[0][0] = findViewById(R.id.square00);
         squares[0][1] = findViewById(R.id.square01);
@@ -167,13 +207,19 @@ public class GameActivity extends AppCompatActivity {
     }
 
     /* Initialize All Views for Score and Turn Keeping */
-    private void initializeScoreKeeping() {
+    public void initializeScoreKeeping() {
+        // this method sets up all of the views required for score and turn keeping, as well as
+        // displaying the proper color icon for player 1 and 2
+
+        // initialize the views
         player1ColorImage = findViewById(R.id.player1_color);
         player1Score = findViewById(R.id.player1_score);
         player2ColorImage = findViewById(R.id.player2_color);
         player2Score = findViewById(R.id.player2_score);
         turnIndicator = findViewById(R.id.turn_indicator);
 
+        // depending on player 1's color, change the icons of the player's color at the top of the
+        // screen as well as change what the turn indicator says at the bottom of the board
         if (player1Color == Board.State.BLACK) {
             player1ColorImage.setImageDrawable(getDrawable(R.drawable.black_circle));
             player2ColorImage.setImageDrawable(getDrawable(R.drawable.white_circle));
@@ -188,6 +234,11 @@ public class GameActivity extends AppCompatActivity {
 
     /* Determine Which Square Was Selected */
     public void onSquareClick(View view) {
+        // this method is called by every single square on the board - it takes the ID of that
+        // square and, based on that ID, sends the square's position to placing a piece if the user
+        // is able to
+
+        // declare the square's position as a pair (row, column)
         Pair<Integer, Integer> squarePosition;
 
         // depending on which square was selected, store that square's position
@@ -405,6 +456,8 @@ public class GameActivity extends AppCompatActivity {
                 break;
         }
 
+        // if the board state is valid at that square and the game isn't over yet, let the player
+        // place their piece at that position
         if (board.boardState[squarePosition.first][squarePosition.second] == Board.State.VALID && !isGameOver) {
             placePiece(squarePosition.first, squarePosition.second);
         }
@@ -412,10 +465,14 @@ public class GameActivity extends AppCompatActivity {
 
     /* Place the Piece in the Selected Square */
     public void placePiece(int row, int column) {
-        // change the square to the current player's color
+        // this method changes the color of the selected square to be that of the current player's
+        // color; furthermore, this method handles all of the reprocussions of that action (i.e.
+        // flipping in between pieces and updating the board state)
+
+        // change the selected square to the current player's color
         board.boardState[row][column] = currentPlayerColor;
 
-        // flip all pieces between this piece and an end piece in all directions
+        // discover which squares need to be flipped and then change those square's color
         ArrayList<Pair<Integer, Integer>> inbetweenPieces = board.inspectDirections(currentPlayerColor, row, column);
         flipPieces(inbetweenPieces);
 
@@ -435,9 +492,15 @@ public class GameActivity extends AppCompatActivity {
         }
     }
 
+    /* Update the Board Visually */
     public void updateBoard() {
-        board.printBoard();
+        // this method changes the image of all of the image buttons that comprise the visual board
+        // to match that of the board Object
 
+        // print the board in ASCII as debug
+        board.printASCIIBoard();
+
+        // iterate through the entire board and update each image button's background as we go
         for (int i = 0; i < squares.length; i++) {
             for (int j = 0; j < squares.length; j++) {
                 if (board.boardState[i][j] == Board.State.EMPTY) {
@@ -456,18 +519,24 @@ public class GameActivity extends AppCompatActivity {
         }
     }
 
+    /* Update the Turn Order */
     public void updateTurn() {
-        Board.State nextPlayerColor;
+        // this method handles all of the actions that need to complete at the end of a turn and
+        // switching board control to the next player (if they can make a valid move)
 
         // determine the next color to place a piece
+        Board.State nextPlayerColor;
         if (currentPlayerColor == Board.State.BLACK)
             nextPlayerColor = Board.State.WHITE;
         else
             nextPlayerColor = Board.State.BLACK;
 
+        // check for all valid moves for the player next turn and then see if they have any valid moves
         board.checkForAllValidMoves(nextPlayerColor);
         boolean nextCanTurnProceed = areThereValidMoves();
 
+        // if the next player can make a valid move, then update the current player's color and the
+        // board state
         if (nextCanTurnProceed) {
             currentPlayerColor = nextPlayerColor;
             updateBoard();
@@ -478,10 +547,14 @@ public class GameActivity extends AppCompatActivity {
             else
                 turnIndicator.setText(turnPlayer2);
         }
+        // otherwise, check to see if the current player has any valid moves (since we're skipping
+        // the next player)
         else {
             board.checkForAllValidMoves(currentPlayerColor);
             nextCanTurnProceed = areThereValidMoves();
 
+            // if the current player can proceed, then we update the board and allow them to
+            // continue play
             if (nextCanTurnProceed) {
                 updateBoard();
 
@@ -491,12 +564,18 @@ public class GameActivity extends AppCompatActivity {
                 else
                     turnIndicator.setText(turnSkipPlayer1);
             }
+            // else if the current player also has no more valid moves, then the game is over and we
+            // count the number of pieces left on the board and end the game
             else
                 gameOver();
         }
     }
 
+    /* Check for Valid Moves */
     public boolean areThereValidMoves() {
+        // this method checks every square on the board to see if there's a single valid move - as
+        // soon as we find one valid move, the method returns true
+
         boolean thereAreValidMoves = false;
         for (int i = 0; i < board.boardState.length; i++) {
             for (int j = 0; j < board.boardState[i].length; j++) {
@@ -510,7 +589,12 @@ public class GameActivity extends AppCompatActivity {
         return thereAreValidMoves;
     }
 
+    /* Update the Score Views and Values */
     public void updateScores() {
+        // this method computes the number of black and white pieces on the board and displays their
+        // totals to the players
+
+        // reset the pieces to be 0
         blackPieces = 0;
         whitePieces = 0;
 
@@ -526,7 +610,7 @@ public class GameActivity extends AppCompatActivity {
             }
         }
 
-        // display these amounts to the user
+        // display these amounts to the players, depending on their color
         String scoreText = ": ";
         String player1ScoreText;
         String player2ScoreText;
@@ -544,10 +628,12 @@ public class GameActivity extends AppCompatActivity {
         player2Score.setText(player2ScoreText);
     }
 
+    /* Compute Final Actions for Match */
     public void gameOver() {
-        Board.State winningColor;
+        // this method declares the winning player and locks the board from further usage
 
-        // determine which color won (or if it's a tie)
+        // determine first which color won (or if it's a tie)
+        Board.State winningColor;
         if (blackPieces > whitePieces) {
             winningColor = Board.State.BLACK;
         }
@@ -558,7 +644,7 @@ public class GameActivity extends AppCompatActivity {
             winningColor = Board.State.EMPTY;
         }
 
-        // display to the user which player won (or if it's a tie)
+        // then display which player won based on the winning color
         if (player1Color == winningColor)
             turnIndicator.setText(turnWinner1);
         else if (player2Color == winningColor)
