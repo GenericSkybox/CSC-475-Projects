@@ -402,6 +402,7 @@
         android:background="@drawable/scoreboard_background"
 
         android:text="Player 1's Turn"
+        android:textAlignment="center"
 
         app:layout_constraintTop_toBottomOf="@+id/board"
         app:layout_constraintLeft_toLeftOf="parent"

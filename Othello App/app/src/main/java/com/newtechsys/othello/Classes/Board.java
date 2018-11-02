@@ -59,6 +59,8 @@ public class Board {
     public ArrayList<Pair<Integer, Integer>> inspectDirections(State endColor, int row, int column) {
         ArrayList<Pair<Integer, Integer>> inbetweenPieces = new ArrayList<>();
         ArrayList<Pair<Integer, Integer>> buffer;
+        int tempRow;
+        int tempCol;
 
         // set the opposite color of what we're trying to place
         State inbetweenColor;
@@ -132,7 +134,77 @@ public class Board {
                 break;
         }
 
-        // TODO check diagonals
+        // check NorthEast
+        buffer = new ArrayList<>();
+        tempRow = row - 1;
+        tempCol = column + 1;
+        while (tempRow >= 0 && tempCol < 8) {
+            if (boardState[tempRow][tempCol] == inbetweenColor)
+                buffer.add(new Pair<>(tempRow, tempCol));
+            else if (boardState[tempRow][tempCol] == endColor) {
+                inbetweenPieces.addAll(buffer);
+                break;
+            }
+            else
+                break;
+
+            tempRow--;
+            tempCol++;
+        }
+
+        // check NorthWest
+        buffer = new ArrayList<>();
+        tempRow = row - 1;
+        tempCol = column - 1;
+        while (tempRow >= 0 && tempCol >= 0) {
+            if (boardState[tempRow][tempCol] == inbetweenColor)
+                buffer.add(new Pair<>(tempRow, tempCol));
+            else if (boardState[tempRow][tempCol] == endColor) {
+                inbetweenPieces.addAll(buffer);
+                break;
+            }
+            else
+                break;
+
+            tempRow--;
+            tempCol--;
+        }
+
+        // check SouthEast
+        buffer = new ArrayList<>();
+        tempRow = row + 1;
+        tempCol = column + 1;
+        while (tempRow < 8 && tempCol < 8) {
+            if (boardState[tempRow][tempCol] == inbetweenColor)
+                buffer.add(new Pair<>(tempRow, tempCol));
+            else if (boardState[tempRow][tempCol] == endColor) {
+                inbetweenPieces.addAll(buffer);
+                break;
+            }
+            else
+                break;
+
+            tempRow++;
+            tempCol++;
+        }
+
+        // check NorthEast
+        buffer = new ArrayList<>();
+        tempRow = row + 1;
+        tempCol = column - 1;
+        while (tempRow < 8 && tempCol >= 0) {
+            if (boardState[tempRow][tempCol] == inbetweenColor)
+                buffer.add(new Pair<>(tempRow, tempCol));
+            else if (boardState[tempRow][tempCol] == endColor) {
+                inbetweenPieces.addAll(buffer);
+                break;
+            }
+            else
+                break;
+
+            tempRow++;
+            tempCol--;
+        }
 
         return inbetweenPieces;
     }

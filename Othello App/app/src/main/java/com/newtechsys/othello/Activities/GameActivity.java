@@ -6,6 +6,8 @@ import android.util.Log;
 import android.util.Pair;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.newtechsys.othello.Classes.Board;
 import com.newtechsys.othello.R;
@@ -16,15 +18,38 @@ public class GameActivity extends AppCompatActivity {
 
     Board board;
 
+    final String turnPlayer1 = "Player 1's Turn";
+    final String turnPlayer2 = "Player 2's Turn";
+    final String turnSkipPlayer1 = "Skipped Player 1's Turn\nPlayer 2's Turn";
+    final String turnSkipPlayer2 = "Skipped Player 2's Turn\nPlayer 1's Turn";
+    final String turnWinner1 = "Player 1 Wins!";
+    final String turnWinner2 = "Player 2 Wins!";
+    final String turnWinnerTie = "It's a Tie!";
+
     public ImageButton[][] squares = new ImageButton[8][8];
-    private Board.State currentPlayerColor;
+    public ImageView player1ColorImage;
+    public ImageView player2ColorImage;
+    public TextView player1Score;
+    public TextView player2Score;
+    public TextView turnIndicator;
+
+    public Board.State currentPlayerColor;
+    public Board.State player1Color;
+    public Board.State player2Color;
+
+    public int whitePieces = 2;
+    public int blackPieces = 2;
+
+    public boolean isGameOver = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
 
-        initializeViews();
+        getPlayerColor();
+        initializeBoardViews();
+        initializeScoreKeeping();
 
         board = new Board();
         board.printBoard();
@@ -32,10 +57,17 @@ public class GameActivity extends AppCompatActivity {
         currentPlayerColor = Board.State.BLACK;
 
         updateBoard();
+        updateScores();
     }
 
-    /* Initialize All Views */
-    private void initializeViews() {
+    private void getPlayerColor() {
+        // TODO get player color from user's selection from previous activity
+        player1Color = Board.State.BLACK;
+        player2Color = Board.State.WHITE;
+    }
+
+    /* Initialize All Views for the Board */
+    private void initializeBoardViews() {
         // row 0
         squares[0][0] = findViewById(R.id.square00);
         squares[0][1] = findViewById(R.id.square01);
@@ -117,6 +149,27 @@ public class GameActivity extends AppCompatActivity {
         squares[7][7] = findViewById(R.id.square77);
     }
 
+    /* Initialize All Views for Score and Turn Keeping */
+    private void initializeScoreKeeping() {
+        player1ColorImage = findViewById(R.id.player1_color);
+        player1Score = findViewById(R.id.player1_score);
+        player2ColorImage = findViewById(R.id.player2_color);
+        player2Score = findViewById(R.id.player2_score);
+        turnIndicator = findViewById(R.id.turn_indicator);
+
+        if (player1Color == Board.State.BLACK) {
+            player1ColorImage.setImageDrawable(getDrawable(R.drawable.black_circle));
+            player2ColorImage.setImageDrawable(getDrawable(R.drawable.white_circle));
+            turnIndicator.setText(turnPlayer1);
+        }
+        else {
+            player1ColorImage.setImageDrawable(getDrawable(R.drawable.white_circle));
+            player2ColorImage.setImageDrawable(getDrawable(R.drawable.black_circle));
+            turnIndicator.setText(turnPlayer2);
+        }
+    }
+
+    /* Determine Which Square Was Selected */
     public void onSquareClick(View view) {
         Pair<Integer, Integer> squarePosition;
 
@@ -335,26 +388,32 @@ public class GameActivity extends AppCompatActivity {
                 break;
         }
 
-        if (board.boardState[squarePosition.first][squarePosition.second] == Board.State.VALID) {
+        if (board.boardState[squarePosition.first][squarePosition.second] == Board.State.VALID && !isGameOver) {
             placePiece(squarePosition.first, squarePosition.second);
         }
     }
 
+    /* Place the Piece in the Selected Square */
     public void placePiece(int row, int column) {
+        // change the square to the current player's color
         board.boardState[row][column] = currentPlayerColor;
 
+        // flip all pieces between this piece and an end piece in all directions
         ArrayList<Pair<Integer, Integer>> inbetweenPieces = board.inspectDirections(currentPlayerColor, row, column);
         flipPieces(inbetweenPieces);
 
+        // update the board and scores visually and then move on to the next turn
         updateBoard();
-
+        updateScores();
         updateTurn();
     }
 
+    /* Flip All Pieces that Need to Be Flipped */
     public void flipPieces(ArrayList<Pair<Integer, Integer>> piecesToFlip) {
+        // iterate through our list of pieces to flip and change their color to the current player's
+        // color
         for (int i = 0; i < piecesToFlip.size(); i++) {
             Pair<Integer, Integer> position = piecesToFlip.get(i);
-
             board.boardState[position.first][position.second] = currentPlayerColor;
         }
     }
@@ -383,6 +442,7 @@ public class GameActivity extends AppCompatActivity {
     public void updateTurn() {
         Board.State nextPlayerColor;
 
+        // determine the next color to place a piece
         if (currentPlayerColor == Board.State.BLACK)
             nextPlayerColor = Board.State.WHITE;
         else
@@ -394,16 +454,28 @@ public class GameActivity extends AppCompatActivity {
         if (nextCanTurnProceed) {
             currentPlayerColor = nextPlayerColor;
             updateBoard();
+
+            // display who's going next
+            if (currentPlayerColor == player1Color)
+                turnIndicator.setText(turnPlayer1);
+            else
+                turnIndicator.setText(turnPlayer2);
         }
         else {
             board.checkForAllValidMoves(currentPlayerColor);
             nextCanTurnProceed = areThereValidMoves();
 
-            if (nextCanTurnProceed)
+            if (nextCanTurnProceed) {
                 updateBoard();
+
+                // display who's going next
+                if (currentPlayerColor == player1Color)
+                    turnIndicator.setText(turnSkipPlayer2);
+                else
+                    turnIndicator.setText(turnSkipPlayer1);
+            }
             else
-                Log.e("Oh no!", "Game over");
-//                gameOver();
+                gameOver();
         }
     }
 
@@ -419,5 +491,64 @@ public class GameActivity extends AppCompatActivity {
         }
 
         return thereAreValidMoves;
+    }
+
+    public void updateScores() {
+        blackPieces = 0;
+        whitePieces = 0;
+
+        // determine how many white and black pieces are on the board
+        for (int i = 0; i < board.boardState.length; i++) {
+            for (int j = 0; j < board.boardState[i].length; j++) {
+                if (board.boardState[i][j] == Board.State.BLACK) {
+                    blackPieces++;
+                }
+                else if (board.boardState[i][j] == Board.State.WHITE) {
+                    whitePieces++;
+                }
+            }
+        }
+
+        // display these amounts to the user
+        String scoreText = ": ";
+        String player1ScoreText;
+        String player2ScoreText;
+
+        if (player1Color == Board.State.BLACK) {
+            player1ScoreText = scoreText + blackPieces;
+            player2ScoreText = scoreText + whitePieces;
+        }
+        else {
+            player1ScoreText = scoreText + whitePieces;
+            player2ScoreText = scoreText + blackPieces;
+        }
+
+        player1Score.setText(player1ScoreText);
+        player2Score.setText(player2ScoreText);
+    }
+
+    public void gameOver() {
+        Board.State winningColor;
+
+        // determine which color won (or if it's a tie)
+        if (blackPieces > whitePieces) {
+            winningColor = Board.State.BLACK;
+        }
+        else if (whitePieces > blackPieces) {
+            winningColor = Board.State.WHITE;
+        }
+        else {
+            winningColor = Board.State.EMPTY;
+        }
+
+        // display to the user which player won (or if it's a tie)
+        if (player1Color == winningColor)
+            turnIndicator.setText(turnWinner1);
+        else if (player2Color == winningColor)
+            turnIndicator.setText(turnWinner2);
+        else
+            turnIndicator.setText(turnWinnerTie);
+
+        isGameOver = true;
     }
 }
