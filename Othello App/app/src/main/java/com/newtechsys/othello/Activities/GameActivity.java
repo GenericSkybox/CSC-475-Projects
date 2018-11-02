@@ -16,6 +16,8 @@ import java.util.ArrayList;
 
 public class GameActivity extends AppCompatActivity {
 
+    final static String TAG = "!GameActivity";
+
     Board board;
 
     final String turnPlayer1 = "Player 1's Turn";
@@ -42,6 +44,8 @@ public class GameActivity extends AppCompatActivity {
 
     public boolean isGameOver = false;
 
+    Bundle extras;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -61,9 +65,22 @@ public class GameActivity extends AppCompatActivity {
     }
 
     private void getPlayerColor() {
-        // TODO get player color from user's selection from previous activity
-        player1Color = Board.State.BLACK;
-        player2Color = Board.State.WHITE;
+        extras = getIntent().getExtras();
+        if (extras != null) {
+            if (extras.getBoolean("StartingBlack")) {
+                player1Color = Board.State.BLACK;
+                player2Color = Board.State.WHITE;
+            }
+            else {
+                player1Color = Board.State.WHITE;
+                player2Color = Board.State.BLACK;
+            }
+        }
+        else {
+            Log.e(TAG, "Error grabbing extras");
+            player1Color = Board.State.BLACK;
+            player2Color = Board.State.WHITE;
+        }
     }
 
     /* Initialize All Views for the Board */
