@@ -35,6 +35,7 @@
         <item name="android:layout_columnWeight">1</item>
         <item name="android:layout_rowWeight">1</item>
         <item name="android:background">@drawable/empty_square</item>
+        <item name="android:onClick">onSquareClick</item>
     </style>
 
 </resources>
