@@ -50,14 +50,12 @@ public class MainMenuActivity extends AppCompatActivity {
         Button playAI = findViewById(R.id.play_ai);
         Button settings = findViewById(R.id.settings);
 
-        // initialize the dialog fragment for when the user selects a new game
-        final DialogFragment dialogFragment = new ColorSelectionDialog();
-
 
         /* OnClick Listeners for Menu Buttons */
         playHuman.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
                 // if the user wants to play against another human, display the options to them
+                DialogFragment dialogFragment = ColorSelectionDialog.newInstance(false);
                 dialogFragment.show(fm, "show");
             }
         });
@@ -65,7 +63,8 @@ public class MainMenuActivity extends AppCompatActivity {
         playAI.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
                 // if the user wants to play against an AI, display the options to them
-                Toast.makeText(getApplication(), R.string.not_implemented, Toast.LENGTH_LONG).show();
+                DialogFragment dialogFragment = ColorSelectionDialog.newInstance(true);
+                dialogFragment.show(fm, "show");
             }
         });
 

@@ -48,6 +48,9 @@ public class GameActivity extends AppCompatActivity {
     public Board.State player1Color;
     public Board.State player2Color;
 
+    // keep track of whether or not the player is against the computer or another human
+    public boolean againstComputer;
+
     // keep track of how many black and white pieces are on the board
     public int whitePieces = 2;
     public int blackPieces = 2;
@@ -94,6 +97,10 @@ public class GameActivity extends AppCompatActivity {
 
         // determine what color player 1 and player 2 is
         getPlayerColor();
+
+        // determine if the user is playing against an AI
+        if (extras != null)
+            againstComputer = extras.getBoolean("AgainstComputer");
 
         // initialize the views for the squares on the board and the other score-keeping views around
         // the board
