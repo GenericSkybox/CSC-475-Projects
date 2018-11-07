@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.util.Pair;
 import android.view.View;
+import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -70,6 +71,27 @@ public class GameActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_game);
 
+        // set up the board and other objects needed to play the game
+        startNewGame();
+
+        // set up the reset button
+        Button resetButton = findViewById(R.id.reset_button);
+        resetButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                startNewGame();
+            }
+        });
+    }
+
+    /***********
+     * METHODS
+     ***********/
+
+    /* Start New Game */
+    public void startNewGame() {
+        // this method sets up the player's color, the board and its view, as well as the initial score
+
         // determine what color player 1 and player 2 is
         getPlayerColor();
 
@@ -90,10 +112,6 @@ public class GameActivity extends AppCompatActivity {
         updateBoard();
         updateScores();
     }
-
-    /***********
-     * METHODS
-     ***********/
 
     /* Determine the Color of Each Player */
     public void getPlayerColor() {
