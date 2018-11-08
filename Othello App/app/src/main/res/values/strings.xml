@@ -5,6 +5,8 @@
 
     <string name="cancel">Cancel</string>
 
+    <string name="debug_mode">Debug Mode</string>
+
     <string name="play_against_ai">Play Against\nAI</string>
     <string name="play_against_player">Play Against\nPlayer</string>
 

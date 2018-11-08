@@ -6,6 +6,7 @@ import android.util.Log;
 import android.util.Pair;
 import android.view.View;
 import android.widget.Button;
+import android.widget.CheckBox;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -26,7 +27,7 @@ public class GameActivity extends AppCompatActivity {
     final static String TAG = "!GameActivity";
 
     // initialize the maximum depth of the mini max tree as a constant
-    final static int maxDepth = 0;
+    final static int maxDepth = 3;
 
     // we also need to keep track of the current depth of the tree
     int currDepth = 0;
@@ -69,7 +70,12 @@ public class GameActivity extends AppCompatActivity {
     // declare extras from the previous activity
     Bundle extras;
 
+    // used to keep track of whether or not the AI is making a move so we can lock the human
+    // player out of a move until the AI is finished
     boolean inTheMiddleOfAITurn = false;
+
+    // used to display an AI's potential board states as it travers the MiniMax algorithm
+    boolean DEBUG = false;
 
     /**********************
      * ACTIVITY LIFECYCLE
@@ -93,6 +99,16 @@ public class GameActivity extends AppCompatActivity {
             @Override
             public void onClick(View view) {
                 startNewGame();
+            }
+        });
+
+        // set up the debug checkbox
+        CheckBox debugCheck = findViewById(R.id.debug_check);
+        debugCheck.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                DEBUG = ((CheckBox)view).isChecked();
+                Log.i(TAG, "Debug is now " + DEBUG);
             }
         });
     }
@@ -120,6 +136,9 @@ public class GameActivity extends AppCompatActivity {
         // create a new board object that will keep track of the color of each square on the visual
         // board
         board = new Board();
+
+        // print our starting board for reference
+        Log.d(TAG, "Starting Board");
         board.printASCIIBoard();
 
         // Othello always starts with black pieces first
@@ -134,7 +153,7 @@ public class GameActivity extends AppCompatActivity {
 
         // if the AI is turned on and it's going first, then compute its turn
         if (againstComputer && (player2Color == currentPlayerColor))
-            computeAITurn(board.checkForAllValidMoves(currentPlayerColor));
+            computeAITurn();
     }
 
     /* Determine the Color of Each Player */
@@ -544,8 +563,11 @@ public class GameActivity extends AppCompatActivity {
         // this method changes the image of all of the image buttons that comprise the visual board
         // to match that of the board Object
 
-        // print the board in ASCII as debug
-        board.printASCIIBoard();
+        // print the board in ASCII if we're debuggin
+        if (DEBUG) {
+            Log.d(TAG, "Current board state");
+            board.printASCIIBoard();
+        }
 
         // iterate through the entire board and update each image button's background as we go
         for (int i = 0; i < squares.length; i++) {
@@ -596,7 +618,7 @@ public class GameActivity extends AppCompatActivity {
 
                 // if player 2 is the computer, then compute its turn
                 if (againstComputer)
-                    computeAITurn(availableMoves);
+                    computeAITurn();
             }
         }
         // otherwise, check to see if the current player has any valid moves (since we're skipping
@@ -618,7 +640,7 @@ public class GameActivity extends AppCompatActivity {
 
                     // if player 2 is the computer, then compute its turn
                     if (againstComputer)
-                        computeAITurn(availableMoves);
+                        computeAITurn();
                 }
             }
             // else if the current player also has no more valid moves, then the game is over and we
@@ -668,22 +690,21 @@ public class GameActivity extends AppCompatActivity {
     }
 
     /* Determine Where the AI Will Place Its Piece */
-    public void computeAITurn(ArrayList<Pair<Integer, Integer>> availableMoves) {
-        Random randyJackson = new Random();
+    public void computeAITurn() {
+        // this method utilizes the MiniMax algorithm to compute the most optimal move for the AI
 
-        int choice = randyJackson.nextInt(availableMoves.size());
+        Log.d(TAG, "Starting MiniMax On Current Board");
 
-        Log.d(TAG, "Starting MiniMax");
+        // signify to the place piece method that we're in the middle of an AI's turn
         inTheMiddleOfAITurn = true;
+
+        // create a copy of the current board state and pass it to the MiniMax algorithm
         Board tempBoard = new Board(board);
         miniMax(tempBoard, true);
-
-        //placePiece(availableMoves.get(choice).first, availableMoves.get(choice).second, board);
     }
 
     /* Recursive MiniMax Algorithm */
     public Integer miniMax(Board currBoard, boolean maximizing) {
-        Log.d(TAG, "Maximizing: " + maximizing + " on depth " + currDepth);
         ArrayList<Pair<Integer, Integer>> availableMoves;
 
         if (maximizing)
@@ -695,10 +716,22 @@ public class GameActivity extends AppCompatActivity {
 
         if (availableMoves.size() > 0) {
             for (int i = 0; i < availableMoves.size(); i++) {
-                Log.d(TAG, "Move - " + i);
                 Pair<Integer, Integer> move = availableMoves.get(i);
+
+                if (maximizing)
+                    currentPlayerColor = player2Color;
+                else
+                    currentPlayerColor = player1Color;
+
                 Board newBoard = new Board(currBoard);
                 placePiece(move.first, move.second, newBoard);
+
+                // if debug is turned on, print where we are in the algorithm and the resulting
+                // board
+                if (DEBUG) {
+                    Log.d(TAG, "Depth - " + currDepth + " Move - " + i);
+                    newBoard.printASCIIBoard();
+                }
 
                 if (currDepth < maxDepth) {
                     currDepth++;
@@ -719,7 +752,6 @@ public class GameActivity extends AppCompatActivity {
         currDepth--;
 
         if (currDepth == -1) {
-            Log.d(TAG, "Done with MiniMax");
             int currentMax = heuristics.get(0);
             int heuristicPos = 0;
 
@@ -730,8 +762,9 @@ public class GameActivity extends AppCompatActivity {
                 }
             }
 
-            Log.w(TAG, "Heuristic " + currentMax + " Move " + heuristicPos);
+//            Log.w(TAG, "Heuristic Chosen " + currentMax + " On Move " + heuristicPos);
 
+            currentPlayerColor = player2Color;
             currDepth = 0;
             inTheMiddleOfAITurn = false;
             Pair<Integer, Integer> move = availableMoves.get(heuristicPos);
@@ -761,12 +794,7 @@ public class GameActivity extends AppCompatActivity {
             }
         }
 
-        Log.i(TAG, "Black " + blackAmount + " White " + whiteAmount + " Max Heuristic " + (whiteAmount - blackAmount));
-        if (playerColor == Board.State.BLACK)
-            Log.i(TAG, "Heuristic " + (blackAmount - whiteAmount));
-        else
-            Log.i(TAG, "Heuristic " + (whiteAmount - blackAmount));
-
+//        Log.i(TAG, "Black " + blackAmount + " White " + whiteAmount + " Max Heuristic " + (whiteAmount - blackAmount) + " Min Heuristic " + (blackAmount - whiteAmount));
 
         if (playerColor == Board.State.BLACK)
             return blackAmount - whiteAmount;

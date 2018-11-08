@@ -266,7 +266,7 @@ public class Board {
 
         // the ASCII board needs to be built dynamically, so we'll use a string builder for that
         StringBuilder sb = new StringBuilder();
-        sb.append("\n");
+        sb.append(" \n");
 
         // iterate through the entire board and shorten each space to single-letter representation
         for (int i = 0; i < boardState.length; i++) {
@@ -274,20 +274,20 @@ public class Board {
                 State currState = boardState[i][j];
 
                 if (currState == State.EMPTY)
-                    sb.append("|E|");
+                    sb.append("| ");
                 else if (currState == State.BLACK)
-                    sb.append("|B|");
+                    sb.append("|X");
                 else if (currState == State.WHITE)
-                    sb.append("|W|");
+                    sb.append("|O");
                 else if (currState == State.VALID)
-                    sb.append("|V|");
+                    sb.append("|-");
             }
 
             // end each row with a new line
-            sb.append("\n");
+            sb.append("|\n");
         }
 
         // print the board
-        Log.d("Board:", sb.toString());
+        Log.d("!Board", sb.toString());
     }
 }
