@@ -43,14 +43,28 @@ public class Board {
         checkForAllValidMoves(State.BLACK);
     }
 
+    /* Existing Constructor */
+    public Board(Board oldBoard) {
+        this.boardState = new State[8][8];
+
+        for (int i = 0; i < boardState.length; i++) {
+            for (int j = 0; j < boardState[i].length; j++) {
+                this.boardState[i][j] = oldBoard.boardState[i][j];
+            }
+        }
+    }
+
     /***********
      * METHODS
      ***********/
 
     /* Check All Squares for Available Moves */
-    public void checkForAllValidMoves(State currentTurnColor) {
+    public ArrayList<Pair<Integer, Integer>> checkForAllValidMoves(State currentTurnColor) {
         // this method iterate through the entire board and check each empty square's validity as a
-        // move for the current player
+        // move for the current player; in the end we'll return a list of available spaces
+
+        // first we create an empty list of available spaces to return as a default
+        ArrayList<Pair<Integer, Integer>> availableSpaces = new ArrayList<>();
 
         // we're checking for the number of pieces between the selected square an "end piece" of the
         // same color
@@ -70,10 +84,13 @@ public class Board {
                     }
                     else {
                         boardState[i][j] = State.VALID;
+                        availableSpaces.add(new Pair<>(i, j));
                     }
                 }
             }
         }
+
+        return availableSpaces;
     }
 
     /* Check All Directions for In Between Pieces */

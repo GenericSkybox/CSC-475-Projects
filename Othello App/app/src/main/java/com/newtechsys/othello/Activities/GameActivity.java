@@ -14,6 +14,8 @@ import com.newtechsys.othello.Classes.Board;
 import com.newtechsys.othello.R;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Random;
 
 public class GameActivity extends AppCompatActivity {
     /***********
@@ -22,6 +24,12 @@ public class GameActivity extends AppCompatActivity {
 
     // tag the activity for debug statements
     final static String TAG = "!GameActivity";
+
+    // initialize the maximum depth of the mini max tree as a constant
+    final static int maxDepth = 0;
+
+    // we also need to keep track of the current depth of the tree
+    int currDepth = 0;
 
     // create a board that will be used to keep track of piece placements
     Board board;
@@ -60,6 +68,8 @@ public class GameActivity extends AppCompatActivity {
 
     // declare extras from the previous activity
     Bundle extras;
+
+    boolean inTheMiddleOfAITurn = false;
 
     /**********************
      * ACTIVITY LIFECYCLE
@@ -118,6 +128,13 @@ public class GameActivity extends AppCompatActivity {
         // update the board visually to match the board object and also update date the scores
         updateBoard();
         updateScores();
+
+        // reset the game over state
+        isGameOver = false;
+
+        // if the AI is turned on and it's going first, then compute its turn
+        if (againstComputer && (player2Color == currentPlayerColor))
+            computeAITurn(board.checkForAllValidMoves(currentPlayerColor));
     }
 
     /* Determine the Color of Each Player */
@@ -484,36 +501,41 @@ public class GameActivity extends AppCompatActivity {
         // if the board state is valid at that square and the game isn't over yet, let the player
         // place their piece at that position
         if (board.boardState[squarePosition.first][squarePosition.second] == Board.State.VALID && !isGameOver) {
-            placePiece(squarePosition.first, squarePosition.second);
+            // we also need to lock the player out of using moves during an AI's turn
+            if (!((player2Color == currentPlayerColor) && againstComputer))
+                placePiece(squarePosition.first, squarePosition.second, board);
         }
     }
 
     /* Place the Piece in the Selected Square */
-    public void placePiece(int row, int column) {
+    public void placePiece(int row, int column, Board givenBoard) {
         // this method changes the color of the selected square to be that of the current player's
-        // color; furthermore, this method handles all of the reprocussions of that action (i.e.
+        // color; furthermore, this method handles all of the repercussions of that action (i.e.
         // flipping in between pieces and updating the board state)
 
         // change the selected square to the current player's color
-        board.boardState[row][column] = currentPlayerColor;
+        givenBoard.boardState[row][column] = currentPlayerColor;
 
         // discover which squares need to be flipped and then change those square's color
-        ArrayList<Pair<Integer, Integer>> inbetweenPieces = board.inspectDirections(currentPlayerColor, row, column);
-        flipPieces(inbetweenPieces);
+        ArrayList<Pair<Integer, Integer>> inbetweenPieces = givenBoard.inspectDirections(currentPlayerColor, row, column);
+        flipPieces(inbetweenPieces, givenBoard);
 
-        // update the board and scores visually and then move on to the next turn
-        updateBoard();
-        updateScores();
-        updateTurn();
+        // update the board and scores visually and then move on to the next turn if we're not in
+        // the middle of the computer's turn
+        if (!inTheMiddleOfAITurn) {
+            updateBoard();
+            updateScores();
+            updateTurn();
+        }
     }
 
     /* Flip All Pieces that Need to Be Flipped */
-    public void flipPieces(ArrayList<Pair<Integer, Integer>> piecesToFlip) {
+    public void flipPieces(ArrayList<Pair<Integer, Integer>> piecesToFlip, Board givenBoard) {
         // iterate through our list of pieces to flip and change their color to the current player's
         // color
         for (int i = 0; i < piecesToFlip.size(); i++) {
             Pair<Integer, Integer> position = piecesToFlip.get(i);
-            board.boardState[position.first][position.second] = currentPlayerColor;
+            givenBoard.boardState[position.first][position.second] = currentPlayerColor;
         }
     }
 
@@ -557,8 +579,8 @@ public class GameActivity extends AppCompatActivity {
             nextPlayerColor = Board.State.BLACK;
 
         // check for all valid moves for the player next turn and then see if they have any valid moves
-        board.checkForAllValidMoves(nextPlayerColor);
-        boolean nextCanTurnProceed = areThereValidMoves();
+        ArrayList<Pair<Integer, Integer>> availableMoves = board.checkForAllValidMoves(nextPlayerColor);
+        boolean nextCanTurnProceed = availableMoves.size() > 0;
 
         // if the next player can make a valid move, then update the current player's color and the
         // board state
@@ -569,14 +591,19 @@ public class GameActivity extends AppCompatActivity {
             // display who's going next
             if (currentPlayerColor == player1Color)
                 turnIndicator.setText(turnPlayer1);
-            else
+            else {
                 turnIndicator.setText(turnPlayer2);
+
+                // if player 2 is the computer, then compute its turn
+                if (againstComputer)
+                    computeAITurn(availableMoves);
+            }
         }
         // otherwise, check to see if the current player has any valid moves (since we're skipping
         // the next player)
         else {
-            board.checkForAllValidMoves(currentPlayerColor);
-            nextCanTurnProceed = areThereValidMoves();
+            availableMoves = board.checkForAllValidMoves(currentPlayerColor);
+            nextCanTurnProceed = availableMoves.size() > 0;
 
             // if the current player can proceed, then we update the board and allow them to
             // continue play
@@ -586,32 +613,19 @@ public class GameActivity extends AppCompatActivity {
                 // display who's going next
                 if (currentPlayerColor == player1Color)
                     turnIndicator.setText(turnSkipPlayer2);
-                else
+                else {
                     turnIndicator.setText(turnSkipPlayer1);
+
+                    // if player 2 is the computer, then compute its turn
+                    if (againstComputer)
+                        computeAITurn(availableMoves);
+                }
             }
             // else if the current player also has no more valid moves, then the game is over and we
             // count the number of pieces left on the board and end the game
             else
                 gameOver();
         }
-    }
-
-    /* Check for Valid Moves */
-    public boolean areThereValidMoves() {
-        // this method checks every square on the board to see if there's a single valid move - as
-        // soon as we find one valid move, the method returns true
-
-        boolean thereAreValidMoves = false;
-        for (int i = 0; i < board.boardState.length; i++) {
-            for (int j = 0; j < board.boardState[i].length; j++) {
-                if (board.boardState[i][j] == Board.State.VALID) {
-                    thereAreValidMoves = true;
-                    break;
-                }
-            }
-        }
-
-        return thereAreValidMoves;
     }
 
     /* Update the Score Views and Values */
@@ -651,6 +665,113 @@ public class GameActivity extends AppCompatActivity {
 
         player1Score.setText(player1ScoreText);
         player2Score.setText(player2ScoreText);
+    }
+
+    /* Determine Where the AI Will Place Its Piece */
+    public void computeAITurn(ArrayList<Pair<Integer, Integer>> availableMoves) {
+        Random randyJackson = new Random();
+
+        int choice = randyJackson.nextInt(availableMoves.size());
+
+        Log.d(TAG, "Starting MiniMax");
+        inTheMiddleOfAITurn = true;
+        Board tempBoard = new Board(board);
+        miniMax(tempBoard, true);
+
+        //placePiece(availableMoves.get(choice).first, availableMoves.get(choice).second, board);
+    }
+
+    /* Recursive MiniMax Algorithm */
+    public Integer miniMax(Board currBoard, boolean maximizing) {
+        Log.d(TAG, "Maximizing: " + maximizing + " on depth " + currDepth);
+        ArrayList<Pair<Integer, Integer>> availableMoves;
+
+        if (maximizing)
+            availableMoves = currBoard.checkForAllValidMoves(player2Color);
+        else
+            availableMoves = currBoard.checkForAllValidMoves(player1Color);
+
+        ArrayList<Integer> heuristics = new ArrayList<>(availableMoves.size());
+
+        if (availableMoves.size() > 0) {
+            for (int i = 0; i < availableMoves.size(); i++) {
+                Log.d(TAG, "Move - " + i);
+                Pair<Integer, Integer> move = availableMoves.get(i);
+                Board newBoard = new Board(currBoard);
+                placePiece(move.first, move.second, newBoard);
+
+                if (currDepth < maxDepth) {
+                    currDepth++;
+                    heuristics.add(miniMax(newBoard, !maximizing));
+                }
+                else {
+                    if (maximizing)
+                        heuristics.add(determineHeuristic(newBoard, player2Color));
+                    else
+                        heuristics.add(determineHeuristic(newBoard, player1Color));
+                }
+            }
+        }
+        else {
+            heuristics.add(-10000);
+        }
+
+        currDepth--;
+
+        if (currDepth == -1) {
+            Log.d(TAG, "Done with MiniMax");
+            int currentMax = heuristics.get(0);
+            int heuristicPos = 0;
+
+            for (int i = 0; i < heuristics.size(); i++) {
+                if (heuristics.get(i) > currentMax) {
+                    currentMax = heuristics.get(i);
+                    heuristicPos = i;
+                }
+            }
+
+            Log.w(TAG, "Heuristic " + currentMax + " Move " + heuristicPos);
+
+            currDepth = 0;
+            inTheMiddleOfAITurn = false;
+            Pair<Integer, Integer> move = availableMoves.get(heuristicPos);
+            placePiece(move.first, move.second, board);
+            return null;
+        }
+        else if (maximizing)
+            return Collections.max(heuristics);
+        else
+            return Collections.min(heuristics);
+    }
+
+    /* Determine the Final Heuristic for a Leaf */
+    public int determineHeuristic(Board finalBoard, Board.State playerColor) {
+        int blackAmount = 0;
+        int whiteAmount = 0;
+
+        // determine how many white and black pieces are on the board
+        for (int i = 0; i < finalBoard.boardState.length; i++) {
+            for (int j = 0; j < finalBoard.boardState[i].length; j++) {
+                if (finalBoard.boardState[i][j] == Board.State.BLACK) {
+                    blackAmount++;
+                }
+                else if (finalBoard.boardState[i][j] == Board.State.WHITE) {
+                    whiteAmount++;
+                }
+            }
+        }
+
+        Log.i(TAG, "Black " + blackAmount + " White " + whiteAmount + " Max Heuristic " + (whiteAmount - blackAmount));
+        if (playerColor == Board.State.BLACK)
+            Log.i(TAG, "Heuristic " + (blackAmount - whiteAmount));
+        else
+            Log.i(TAG, "Heuristic " + (whiteAmount - blackAmount));
+
+
+        if (playerColor == Board.State.BLACK)
+            return blackAmount - whiteAmount;
+        else
+            return whiteAmount - blackAmount;
     }
 
     /* Compute Final Actions for Match */
