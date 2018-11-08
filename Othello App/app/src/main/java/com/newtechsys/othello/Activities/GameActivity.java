@@ -1,5 +1,6 @@
 package com.newtechsys.othello.Activities;
 
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -563,7 +564,7 @@ public class GameActivity extends AppCompatActivity {
         // this method changes the image of all of the image buttons that comprise the visual board
         // to match that of the board Object
 
-        // print the board in ASCII if we're debuggin
+        // print the board in ASCII if we're debugging
         if (DEBUG) {
             Log.d(TAG, "Current board state");
             board.printASCIIBoard();
@@ -691,38 +692,57 @@ public class GameActivity extends AppCompatActivity {
 
     /* Determine Where the AI Will Place Its Piece */
     public void computeAITurn() {
-        // this method utilizes the MiniMax algorithm to compute the most optimal move for the AI
+        // this method utilizes the MiniMax algorithm on a separate thread to compute the most
+        // optimal move for the AI
 
         Log.d(TAG, "Starting MiniMax On Current Board");
 
         // signify to the place piece method that we're in the middle of an AI's turn
         inTheMiddleOfAITurn = true;
 
-        // create a copy of the current board state and pass it to the MiniMax algorithm
-        Board tempBoard = new Board(board);
-        miniMax(tempBoard, true);
+        // set up a handler (a thread essentially) that will run the AI's calculations after a set
+        // delay
+        final Handler handler = new Handler();
+        handler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                // create a copy of the current board state and pass it to the MiniMax algorithm
+                Board tempBoard = new Board(board);
+                miniMax(tempBoard, true);
+            }
+        }, 1000);
     }
 
     /* Recursive MiniMax Algorithm */
     public Integer miniMax(Board currBoard, boolean maximizing) {
-        ArrayList<Pair<Integer, Integer>> availableMoves;
+        // this method implements the MiniMax tree search algorithm recursively to find the most
+        // optimal piece placement for the AI
 
+        // first we need to determine the number of available moves, depending on whether or not
+        // we're maximizing or minimizing
+        ArrayList<Pair<Integer, Integer>> availableMoves;
         if (maximizing)
             availableMoves = currBoard.checkForAllValidMoves(player2Color);
         else
             availableMoves = currBoard.checkForAllValidMoves(player1Color);
 
+        // ultimately we're going to return the best heuristic for this node, so we need to keep
+        // track of all heuristics we gather
         ArrayList<Integer> heuristics = new ArrayList<>(availableMoves.size());
 
+        // if we have any available moves, then we need to determine the heuristic for each leaf
         if (availableMoves.size() > 0) {
             for (int i = 0; i < availableMoves.size(); i++) {
+                // grab the move for this leaf node
                 Pair<Integer, Integer> move = availableMoves.get(i);
 
+                // set up the "current" player's color depending on whether or not we're maximizing
                 if (maximizing)
                     currentPlayerColor = player2Color;
                 else
                     currentPlayerColor = player1Color;
 
+                // create a new board (which is cloned off of the current board) and place a piece on it
                 Board newBoard = new Board(currBoard);
                 placePiece(move.first, move.second, newBoard);
 
@@ -733,10 +753,13 @@ public class GameActivity extends AppCompatActivity {
                     newBoard.printASCIIBoard();
                 }
 
+                // if we're not at maximum depth, increment the current depth and compute the
+                // heuristic for the next layer
                 if (currDepth < maxDepth) {
                     currDepth++;
                     heuristics.add(miniMax(newBoard, !maximizing));
                 }
+                // if we're at maximum depth, determine the heuristic of the leaf node
                 else {
                     if (maximizing)
                         heuristics.add(determineHeuristic(newBoard, player2Color));
@@ -745,12 +768,22 @@ public class GameActivity extends AppCompatActivity {
                 }
             }
         }
+        // if we have no moves on a maximizing leaf, then we've essentially "lost"; meanwhile if the
+        // opponent has no moves on a minimizing leaf, then we've essentially "won"
         else {
-            heuristics.add(-10000);
+            if (maximizing)
+                heuristics.add(-10000);
+            else
+                heuristics.add(1000);
         }
 
+        // after we're done computing all of the leaf node heuristics for the current node, we need
+        // to go up a level in depth
         currDepth--;
 
+        // if we're "above the tree" at this point, that means we have computed all of the nodes
+        // below the base node -- in other we're we're done and we need to compute the best
+        // heuristic and place a piece based off of that's heuristic's place in the move list
         if (currDepth == -1) {
             int currentMax = heuristics.get(0);
             int heuristicPos = 0;
@@ -764,21 +797,29 @@ public class GameActivity extends AppCompatActivity {
 
 //            Log.w(TAG, "Heuristic Chosen " + currentMax + " On Move " + heuristicPos);
 
+            // reset all of the variables changed so that we're back to the original board state
             currentPlayerColor = player2Color;
             currDepth = 0;
             inTheMiddleOfAITurn = false;
+
+            // place the most optimal piece on the board
             Pair<Integer, Integer> move = availableMoves.get(heuristicPos);
             placePiece(move.first, move.second, board);
             return null;
         }
+        // if we're on a maximizing layer, but not done with the tree, we take the highest heuristic
         else if (maximizing)
             return Collections.max(heuristics);
+        // else, we're on a minimizing layer and not done with the tree, so we take the lowest heuristic
         else
             return Collections.min(heuristics);
     }
 
     /* Determine the Final Heuristic for a Leaf */
     public int determineHeuristic(Board finalBoard, Board.State playerColor) {
+        // this method determines the heuristic for each node based on the amount of pieces the AI
+        // has compared to those that the opponent has
+
         int blackAmount = 0;
         int whiteAmount = 0;
 
@@ -796,6 +837,7 @@ public class GameActivity extends AppCompatActivity {
 
 //        Log.i(TAG, "Black " + blackAmount + " White " + whiteAmount + " Max Heuristic " + (whiteAmount - blackAmount) + " Min Heuristic " + (blackAmount - whiteAmount));
 
+        // determine the heuristic depending on the given player color
         if (playerColor == Board.State.BLACK)
             return blackAmount - whiteAmount;
         else
