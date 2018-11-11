@@ -78,6 +78,9 @@ public class GameActivity extends AppCompatActivity {
     // used to display an AI's potential board states as it travers the MiniMax algorithm
     boolean DEBUG = false;
 
+    // used to keep track of how many scenarios the AI runs through
+    float movesComputed = 0;
+
     /**********************
      * ACTIVITY LIFECYCLE
      **********************/
@@ -697,8 +700,11 @@ public class GameActivity extends AppCompatActivity {
 
         Log.d(TAG, "Starting MiniMax On Current Board");
 
-        // signify to the place piece method that we're in the middle of an AI's turn
+        // signify to the "place piece" method that we're in the middle of an AI's turn
         inTheMiddleOfAITurn = true;
+
+        // reset the amount of moves the AI has computed
+        movesComputed = 0;
 
         // set up a handler (a thread essentially) that will run the AI's calculations after a set
         // delay
@@ -735,6 +741,9 @@ public class GameActivity extends AppCompatActivity {
             for (int i = 0; i < availableMoves.size(); i++) {
                 // grab the move for this leaf node
                 Pair<Integer, Integer> move = availableMoves.get(i);
+
+                // increment the number of moves computed
+                movesComputed++;
 
                 // set up the "current" player's color depending on whether or not we're maximizing
                 if (maximizing)
@@ -796,6 +805,8 @@ public class GameActivity extends AppCompatActivity {
             }
 
 //            Log.w(TAG, "Heuristic Chosen " + currentMax + " On Move " + heuristicPos);
+            if (DEBUG)
+                Log.w(TAG, "Moves Computed = " + movesComputed+1);
 
             // reset all of the variables changed so that we're back to the original board state
             currentPlayerColor = player2Color;
