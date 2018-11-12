@@ -425,6 +425,28 @@
         app:layout_constraintRight_toRightOf="parent"/>
 
     <TextView
+        android:id="@+id/pruning_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+
+        android:text="@string/pruning"
+
+        app:layout_constraintTop_toTopOf="@+id/pruning_check"
+        app:layout_constraintBottom_toBottomOf="@+id/pruning_check"
+        app:layout_constraintRight_toLeftOf="@+id/pruning_check"/>
+
+    <CheckBox
+        android:id="@+id/pruning_check"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="12dp"
+        android:layout_marginEnd="10dp"
+
+        app:layout_constraintBottom_toTopOf="@+id/debug_check"
+        app:layout_constraintRight_toRightOf="parent"
+        />
+
+    <TextView
         android:id="@+id/debug_text"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

@@ -32,6 +32,9 @@ public class MainMenuActivity extends AppCompatActivity {
     // fragment manager for handling dialogs
     FragmentManager fm = getSupportFragmentManager();
 
+    // variable for special messages
+    int settingsCounter = 0;
+
     /**********************
      * ACTIVITY LIFECYCLE
      **********************/
@@ -48,7 +51,7 @@ public class MainMenuActivity extends AppCompatActivity {
         // set up the main menu buttons' views
         Button playHuman = findViewById(R.id.play_human);
         Button playAI = findViewById(R.id.play_ai);
-        Button settings = findViewById(R.id.settings);
+        final Button settings = findViewById(R.id.settings);
 
 
         /* OnClick Listeners for Menu Buttons */
@@ -70,8 +73,21 @@ public class MainMenuActivity extends AppCompatActivity {
 
         settings.setOnClickListener(new View.OnClickListener() {
             public void onClick(View view) {
-                // if the user wants to change the settings, bring them to the Settings Activity
-                Toast.makeText(getApplication(), R.string.not_implemented, Toast.LENGTH_LONG).show();
+                // have some fun with the user if they insist on going to the settings page (which
+                // doesn't exist)
+                if (settingsCounter == 0)
+                    Toast.makeText(getApplication(), R.string.not_implemented, Toast.LENGTH_LONG).show();
+                else if (settingsCounter == 1)
+                    Toast.makeText(getApplication(), R.string.no_really, Toast.LENGTH_LONG).show();
+                else if (settingsCounter == 2)
+                    Toast.makeText(getApplication(), R.string.stop_tapping, Toast.LENGTH_LONG).show();
+                else if (settingsCounter == 3)
+                    Toast.makeText(getApplication(), R.string.one_more, Toast.LENGTH_LONG).show();
+                else {
+                    finishAndRemoveTask();
+                }
+
+                settingsCounter++;
             }
         });
     }
